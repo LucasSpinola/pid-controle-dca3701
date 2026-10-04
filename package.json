@@ -1,0 +1,11 @@
+{
+  "name": "pid-controle",
+  "version": "1.0.0",
+  "description": "Projeto de controladores PD, PI e PID pelo lugar geométrico das raízes.",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "start": "npx --yes serve . -l 8000",
+    "teste": "node testes/executar.js && node testes/raizes.js && node testes/interface.js"
+  }
+}
