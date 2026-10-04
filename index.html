@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PD, PI e PID pelo LGR</title>
+  <meta name="description" content="Projeto de controladores PD, PI e PID pelo lugar geométrico das raízes, com a memória de cálculo completa.">
+  <meta name="author" content="Lucas Augusto Spinola Pinto">
+  <link rel="icon" href="assets/img/dca.gif">
+  <link rel="stylesheet" href="assets/vendor/katex/katex.min.css">
+  <link rel="stylesheet" href="assets/css/estilo.css">
+  <script defer src="assets/vendor/katex/katex.min.js"></script>
+  <script type="module" src="assets/js/principal.js"></script>
+</head>
+<body>
+  <header class="barra">
+    <div class="barra-interna">
+      <div class="marcas">
+        <img class="marca marca-ufrn" src="assets/img/ufrn.png"
+             alt="Universidade Federal do Rio Grande do Norte">
+        <span class="marcas-divisor" aria-hidden="true"></span>
+        <img class="marca marca-dca" src="assets/img/dca.gif"
+             alt="Departamento de Engenharia de Computação e Automação">
+      </div>
+      <p class="barra-texto">
+        Departamento de Engenharia de Computação e Automação
+        <span>Universidade Federal do Rio Grande do Norte</span>
+      </p>
+    </div>
+  </header>
+
+  <section class="capa">
+    <div class="capa-interna">
+      <div class="capa-texto">
+        <p class="etiqueta">DCA-3701 · Projeto de Sistemas de Controle · 2ª unidade</p>
+        <h1>Projeto de PD, PI e PID pelo lugar das raízes</h1>
+        <p class="capa-legenda" data-formatar>
+          Informe $G(s)$, $H(s)$, o controlador e a especificação. A página leva os polos desejados
+          ao LGR pelos critérios de ângulo e de módulo, devolve $K_p$, $K_i$ e $K_d$ e confere o
+          resultado na resposta ao degrau.
+        </p>
+        <p class="assinatura">
+          <span class="assinatura-inicial" aria-hidden="true">LP</span>
+          <span class="assinatura-corpo">
+            <span class="assinatura-nome">Lucas Augusto Spinola Pinto</span>
+            <span class="assinatura-papel">Autor</span>
+          </span>
+        </p>
+      </div>
+
+      <figure class="capa-figura">
+        <figcaption class="capa-figura-titulo">Prévia do plano s</figcaption>
+        <div class="capa-figura-plano" id="miniatura"></div>
+      </figure>
+    </div>
+  </section>
+
+  <main class="conteudo">
+    <form id="formulario" class="painel">
+      <div class="exemplos">
+        <span class="exemplos-rotulo">Questões da lista</span>
+        <div id="exemplos" class="exemplos-lista"></div>
+      </div>
+
+      <div class="colunas colunas-2">
+        <section class="cartao">
+          <header class="cartao-cabecalho">
+            <h2>Planta</h2>
+            <span class="cartao-simbolo">G(s)</span>
+          </header>
+          <div class="campos-duplos">
+            <label class="campo">
+              <span>Numerador</span>
+              <input id="numerador-g" type="text" value="4 16" autocomplete="off" spellcheck="false">
+            </label>
+            <label class="campo">
+              <span>Denominador</span>
+              <input id="denominador-g" type="text" value="1 4 4 0" autocomplete="off" spellcheck="false">
+            </label>
+          </div>
+          <div class="previa" id="previa-g"></div>
+        </section>
+
+        <section class="cartao">
+          <header class="cartao-cabecalho">
+            <h2>Realimentação</h2>
+            <span class="cartao-simbolo">H(s)</span>
+          </header>
+          <div class="campos-duplos">
+            <label class="campo">
+              <span>Numerador</span>
+              <input id="numerador-h" type="text" value="1" autocomplete="off" spellcheck="false">
+            </label>
+            <label class="campo">
+              <span>Denominador</span>
+              <input id="denominador-h" type="text" value="1" autocomplete="off" spellcheck="false">
+            </label>
+          </div>
+          <div class="previa" id="previa-h"></div>
+        </section>
+      </div>
+
+      <p class="dica">
+        Coeficientes separados por espaço, em ordem decrescente de s. Por exemplo,
+        <code>1 4 4 0</code> vale <code>s³ + 4s² + 4s</code>.
+      </p>
+
+      <div class="colunas colunas-2 blocos">
+        <fieldset class="grupo">
+          <legend>Controlador</legend>
+          <label class="campo">
+            <span>Tipo</span>
+            <select id="controlador">
+              <option value="pd" selected>PD</option>
+              <option value="pi">PI</option>
+              <option value="pid">PID com zeros reais e iguais</option>
+            </select>
+          </label>
+          <div class="previa" id="previa-controlador"></div>
+        </fieldset>
+
+        <fieldset class="grupo">
+          <legend>Especificação de malha fechada</legend>
+          <label class="campo">
+            <span>Informar por</span>
+            <select id="modo">
+              <option value="desempenho" selected>Sobressinal e tempo de acomodação</option>
+              <option value="amortecimento">Fator de amortecimento e frequência natural</option>
+              <option value="polos">Polos desejados</option>
+            </select>
+          </label>
+
+          <div class="campos-triplos" data-modo="desempenho">
+            <label class="campo">
+              <span>M<sub>P</sub> máximo (%)</span>
+              <input id="sobressinal" type="text" inputmode="decimal" value="10" autocomplete="off">
+            </label>
+            <label class="campo">
+              <span>t<sub>s</sub> máximo (s)</span>
+              <input id="acomodacao" type="text" inputmode="decimal" value="4" autocomplete="off">
+            </label>
+            <label class="campo">
+              <span>Critério</span>
+              <select id="criterio">
+                <option value="2">2%</option>
+                <option value="5" selected>5%</option>
+              </select>
+            </label>
+          </div>
+
+          <div class="campos-duplos" data-modo="amortecimento" hidden>
+            <label class="campo">
+              <span>ζ</span>
+              <input id="zeta" type="text" inputmode="decimal" value="0.7" autocomplete="off">
+            </label>
+            <label class="campo">
+              <span>ω<sub>n</sub> (rad/s)</span>
+              <input id="omega-n" type="text" inputmode="decimal" value="0.5" autocomplete="off">
+            </label>
+          </div>
+
+          <div class="campos-duplos" data-modo="polos" hidden>
+            <label class="campo">
+              <span>Parte real</span>
+              <input id="polo-real" type="text" inputmode="decimal" value="-4" autocomplete="off">
+            </label>
+            <label class="campo">
+              <span>Parte imaginária (±)</span>
+              <input id="polo-imaginario" type="text" inputmode="decimal" value="4" autocomplete="off">
+            </label>
+          </div>
+        </fieldset>
+      </div>
+
+      <button class="botao" type="submit">Projetar controlador</button>
+    </form>
+
+    <section class="roteiro" id="roteiro">
+      <h2 class="roteiro-titulo">O que você vai ver</h2>
+      <ol class="roteiro-lista" id="roteiro-lista"></ol>
+    </section>
+
+    <div id="resultado" class="resultado"></div>
+  </main>
+</body>
+</html>
