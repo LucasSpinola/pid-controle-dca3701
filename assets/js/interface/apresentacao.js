@@ -9,6 +9,8 @@ import {
   desenharPolosZeros,
   desenharPolosDesejados,
   desenharRetasDeAmortecimento,
+  desenharControlador,
+  desenharPoloDoControlador,
 } from '../grafico/camadas.js';
 import { elemento, escrever, formula, limparNo } from './componentes.js';
 import { CAMPOS, campo, atualizarModo, lerCoeficientes, lerEspecificacao } from './formulario.js';
@@ -57,12 +59,17 @@ function desenharMiniatura() {
 
   try {
     const leitura = lerEspecificacao();
-    const esboco = esbocarProjeto(...coeficientes, leitura.especificacao || null);
+    const esboco = esbocarProjeto(...coeficientes, leitura.especificacao || null, campo('controlador').value);
     const plano = criarPlano(pontosNotaveis(esboco), '', { limites: LIMITES_COMPACTOS, semLegenda: true });
     if (esboco.desempenho) {
       desenharRetasDeAmortecimento(plano, esboco.desempenho.zeta);
     }
     desenharPolosZeros(plano, esboco.malhaAberta.polos, esboco.malhaAberta.zeros);
+    if (esboco.zero) {
+      desenharControlador(plano, esboco.controlador, esboco.zero, { rotular: false });
+    } else if (esboco.controlador.polosNaOrigem > 0) {
+      desenharPoloDoControlador(plano);
+    }
     if (esboco.desempenho) {
       desenharPolosDesejados(plano, esboco.desempenho.polo, { rotular: false });
     }

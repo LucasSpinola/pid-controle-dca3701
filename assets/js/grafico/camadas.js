@@ -123,12 +123,14 @@ export function desenharPoloDoControlador(plano) {
   plano.registrarLegenda('x', CORES.controlador, 'Polo do controlador');
 }
 
-export function desenharControlador(plano, controlador, zero) {
+export function desenharControlador(plano, controlador, zero, opcoes = {}) {
   plano.circulo(zero.ponto, { stroke: CORES.controlador, 'stroke-width': 2.6, fill: 'none' }, 7);
   if (controlador.zeros > 1) {
     plano.circulo(zero.ponto, { stroke: CORES.controlador, 'stroke-width': 1.8, fill: 'none' }, 3.5);
   }
-  plano.rotulo(zero.ponto, `-z = ${fixo(-zero.valor, 3)}`, { fill: CORES.controlador });
+  if (opcoes.rotular !== false) {
+    plano.rotulo(zero.ponto, `-z = ${fixo(-zero.valor, 3)}`, { fill: CORES.controlador });
+  }
   plano.registrarLegenda(
     'circulo',
     CORES.controlador,

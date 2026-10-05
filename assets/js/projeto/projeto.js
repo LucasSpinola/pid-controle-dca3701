@@ -52,11 +52,19 @@ function varrer(projeto) {
   });
 }
 
-export function esbocarProjeto(nG, dG, nH, dH, especificacao) {
-  return {
-    malhaAberta: montarMalhaAberta(nG, dG, nH, dH),
-    desempenho: especificacao ? interpretarEspecificacao(especificacao) : null,
-  };
+export function esbocarProjeto(nG, dG, nH, dH, especificacao, idDoControlador) {
+  const malhaAberta = montarMalhaAberta(nG, dG, nH, dH);
+  const desempenho = especificacao ? interpretarEspecificacao(especificacao) : null;
+  const controlador = idDoControlador ? obterControlador(idDoControlador) : null;
+  const esboco = { malhaAberta, desempenho, controlador, zero: null };
+
+  if (controlador && desempenho) {
+    const angulo = criterioDeAngulo(desempenho.polo, malhaAberta, controlador);
+    if (angulo.viavel) {
+      esboco.zero = localizarZero(desempenho.polo, angulo);
+    }
+  }
+  return esboco;
 }
 
 export function projetarControlador(entrada) {
