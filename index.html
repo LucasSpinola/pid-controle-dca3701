@@ -229,11 +229,12 @@
       <button class="botao" type="submit">Projetar controlador</button>
     </form>
 
-    <section class="painel ferramentas" id="ferramentas">
-      <header class="ferramentas-cabecalho">
+    <details class="painel ferramentas" id="ferramentas">
+      <summary class="ferramentas-cabecalho">
         <h2>Ferramentas avulsas</h2>
-        <p>Contas que não dependem do projeto acima.</p>
-      </header>
+        <p>Discretizar uma G(s) e Ziegler-Nichols, sem projetar controlador.</p>
+      </summary>
+      <div class="ferramentas-corpo">
       <label class="campo">
         <span>Ferramenta</span>
         <select id="ferramenta">
@@ -295,7 +296,8 @@
       </div>
 
       <button class="botao" type="button" id="calcular-ferramenta">Calcular</button>
-    </section>
+      </div>
+    </details>
 
     <section class="roteiro" id="roteiro">
       <h2 class="roteiro-titulo">O que você vai ver</h2>

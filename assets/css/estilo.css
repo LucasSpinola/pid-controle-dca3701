@@ -238,6 +238,37 @@ body {
   margin-top: 20px;
 }
 
+.ferramentas {
+  padding-top: 18px;
+  padding-bottom: 18px;
+}
+
+.ferramentas-cabecalho {
+  position: relative;
+  padding-left: 22px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.ferramentas-cabecalho::-webkit-details-marker {
+  display: none;
+}
+
+.ferramentas-cabecalho::before {
+  content: "›";
+  position: absolute;
+  left: 2px;
+  top: 0;
+  font-size: 20px;
+  line-height: 1.1;
+  color: var(--texto-suave);
+  transition: transform 0.15s ease;
+}
+
+.ferramentas[open] > .ferramentas-cabecalho::before {
+  transform: rotate(90deg);
+}
+
 .ferramentas-cabecalho h2 {
   margin: 0;
   font-size: 17px;
@@ -245,9 +276,13 @@ body {
 }
 
 .ferramentas-cabecalho p {
-  margin: 4px 0 14px;
+  margin: 4px 0 0;
   font-size: 13px;
   color: var(--texto-suave);
+}
+
+.ferramentas-corpo {
+  margin-top: 16px;
 }
 
 .ferramentas .dica {
