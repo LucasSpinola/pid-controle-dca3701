@@ -40,12 +40,38 @@ function porPolos(especificacao) {
   return { ...especificacao, ...polosDesejados(-especificacao.real / omegaN, omegaN) };
 }
 
+function porPico(especificacao) {
+  const zeta = amortecimentoDoSobressinal(especificacao.sobressinal);
+  const omegaD = Math.PI / especificacao.tempoDePico;
+  return { ...especificacao, ...polosDesejados(zeta, omegaD / Math.sqrt(1 - zeta ** 2)) };
+}
+
+function porAmortecimentoEAcomodacao(especificacao) {
+  const constante = CONSTANTES_DE_ACOMODACAO[especificacao.criterio];
+  const sigma = constante / especificacao.acomodacao;
+  return { ...especificacao, constante, ...polosDesejados(especificacao.zeta, sigma / especificacao.zeta) };
+}
+
+function porAcomodacaoEPico(especificacao) {
+  const constante = CONSTANTES_DE_ACOMODACAO[especificacao.criterio];
+  const sigma = constante / especificacao.acomodacao;
+  const omegaD = Math.PI / especificacao.tempoDePico;
+  const omegaN = Math.hypot(sigma, omegaD);
+  return { ...especificacao, constante, ...polosDesejados(sigma / omegaN, omegaN) };
+}
+
+const INTERPRETES = {
+  desempenho: porDesempenho,
+  polos: porPolos,
+  pico: porPico,
+  amortecimentoAcomodacao: porAmortecimentoEAcomodacao,
+  acomodacaoPico: porAcomodacaoEPico,
+};
+
 export function interpretarEspecificacao(especificacao) {
-  if (especificacao.modo === 'desempenho') {
-    return porDesempenho(especificacao);
-  }
-  if (especificacao.modo === 'polos') {
-    return porPolos(especificacao);
+  const interprete = INTERPRETES[especificacao.modo];
+  if (interprete) {
+    return interprete(especificacao);
   }
   return { ...especificacao, ...polosDesejados(especificacao.zeta, especificacao.omegaN) };
 }

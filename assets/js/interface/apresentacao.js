@@ -1,4 +1,4 @@
-import { interpretarCoeficientes } from '../nucleo/entrada.js';
+import { interpretarPolinomio } from '../nucleo/entrada.js';
 import { razaoLatex } from '../formatacao/latex.js';
 import { controladorLatex } from '../formatacao/controlador.js';
 import { esbocarProjeto } from '../projeto/projeto.js';
@@ -10,7 +10,7 @@ import {
   desenharPolosDesejados,
   desenharRetasDeAmortecimento,
   desenharControlador,
-  desenharPoloDoControlador,
+  desenharFixosDoControlador,
 } from '../grafico/camadas.js';
 import { elemento, escrever, formula, limparNo } from './componentes.js';
 import {
@@ -20,6 +20,7 @@ import {
   atualizarModo,
   lerCoeficientes,
   lerEspecificacao,
+  lerFixo,
 } from './formulario.js';
 import { EXERCICIOS } from './exercicios.js';
 import { passos } from './passos/indice.js';
@@ -36,15 +37,15 @@ const PREVIAS = [
 
 function atualizarPrevia(configuracao) {
   const destino = document.getElementById(configuracao.destino);
-  const numerador = interpretarCoeficientes(campo(configuracao.numerador).value);
-  const denominador = interpretarCoeficientes(campo(configuracao.denominador).value);
+  const numerador = interpretarPolinomio(campo(configuracao.numerador).value);
+  const denominador = interpretarPolinomio(campo(configuracao.denominador).value);
 
   limparNo(destino);
   destino.classList.remove('previa-invalida');
 
   if (numerador === null || denominador === null) {
     destino.classList.add('previa-invalida');
-    escrever(destino, 'Coeficientes inválidos');
+    escrever(destino, 'Expressão inválida');
     return;
   }
   formula(destino, `${configuracao.nome} = ${razaoLatex(numerador, denominador)}`);
@@ -52,7 +53,7 @@ function atualizarPrevia(configuracao) {
 
 function atualizarPreviaDoControlador() {
   const destino = limparNo(document.getElementById('previa-controlador'));
-  formula(destino, controladorLatex(obterControlador(campo('controlador').value)));
+  formula(destino, controladorLatex(obterControlador(campo('controlador').value, lerFixo())));
 }
 
 function desenharMiniatura() {
@@ -67,7 +68,12 @@ function desenharMiniatura() {
 
   try {
     const leitura = lerEspecificacao();
-    const esboco = esbocarProjeto(...coeficientes, leitura.especificacao || null, campo('controlador').value);
+    const esboco = esbocarProjeto(
+      ...coeficientes,
+      leitura.especificacao || null,
+      campo('controlador').value,
+      lerFixo(),
+    );
     const plano = criarPlano(pontosNotaveis(esboco), '', { limites: LIMITES_COMPACTOS, semLegenda: true });
     if (esboco.desempenho) {
       desenharRetasDeAmortecimento(plano, esboco.desempenho.zeta);
@@ -75,8 +81,8 @@ function desenharMiniatura() {
     desenharPolosZeros(plano, esboco.malhaAberta.polos, esboco.malhaAberta.zeros);
     if (esboco.zero) {
       desenharControlador(plano, esboco.controlador, esboco.zero, { rotular: false });
-    } else if (esboco.controlador.polosNaOrigem > 0) {
-      desenharPoloDoControlador(plano);
+    } else {
+      desenharFixosDoControlador(plano, esboco.controlador);
     }
     if (esboco.desempenho) {
       desenharPolosDesejados(plano, esboco.desempenho.polo, { rotular: false });

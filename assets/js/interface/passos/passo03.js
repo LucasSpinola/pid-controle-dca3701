@@ -38,7 +38,8 @@ export function renderizar(destino, projeto) {
   }
 
   separador(destino);
-  paragrafo(destino, controlador.polosLivres > 0 ? '**Controlador:**' : `**Controlador ${controlador.nome}:**`);
+  const familiaPid = ['pd', 'pi', 'pid'].includes(controlador.id);
+  paragrafo(destino, familiaPid ? `**Controlador ${controlador.nome}:**` : '**Controlador:**');
   formula(destino, controladorLatex(controlador));
   if (controlador.zeros > 1) {
     paragrafo(destino, 'Os dois zeros são reais e iguais, então um único valor $z$ descreve os dois.');
@@ -55,4 +56,12 @@ export function renderizar(destino, projeto) {
     `Restam duas incógnitas: $${controlador.simboloLivre}$, ${livre}, que sai do critério de ângulo, e `
     + `$${controlador.simboloGanho}$, que sai do critério de módulo, ambos aplicados em $s = s_d$.`,
   );
+  if (controlador.atraso) {
+    aviso(
+      destino,
+      'informacao',
+      'No atraso-avanço, os passos 4 a 6 projetam só a parte em avanço, com o zero $z_1$ dado. '
+      + 'A parte em atraso entra no passo 6b, pela constante de erro.',
+    );
+  }
 }

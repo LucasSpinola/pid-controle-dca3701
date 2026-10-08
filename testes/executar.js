@@ -14,6 +14,10 @@ import { projetarControlador } from '../assets/js/projeto/projeto.js';
 import { extrairRamo } from '../assets/js/projeto/lugarRaizes.js';
 import { ganhosDeDescolamento } from '../assets/js/projeto/descolamento.js';
 import { discretizar } from '../assets/js/projeto/discretizacao.js';
+import { interpretarPolinomio } from '../assets/js/nucleo/entrada.js';
+import { constantesDeErro } from '../assets/js/projeto/erroEstatico.js';
+import { projetarAtraso, ganhoNaRetaDeAmortecimento } from '../assets/js/projeto/atraso.js';
+import { primeiroMetodo, segundoMetodo, pontoCritico } from '../assets/js/projeto/zieglerNichols.js';
 import * as P from '../assets/js/nucleo/polinomio.js';
 import * as C from '../assets/js/nucleo/complexo.js';
 
@@ -268,6 +272,147 @@ teste('a/(s+b) recusa quando falta fase', () => {
   const angulo = criterioDeAngulo({ re: -2, im: 2 }, malhaAberta, obterControlador('polo'));
   assert.equal(angulo.viavel, false);
   assert.equal(angulo.motivo, 'excesso');
+});
+
+teste('expressao fatorada vira coeficientes', () => {
+  const casos = [
+    ['5(s+3)', [5, 15]],
+    ['s(s+4)', [1, 4, 0]],
+    ['(s+2)^2', [1, 4, 4]],
+    ['s^2 + 2s + 2', [1, 2, 2]],
+    ['5(s+1)(s+4)', [5, 25, 20]],
+    ['10000s^2 - 11772', [10000, 0, -11772]],
+    ['-(s+1)', [-1, -1]],
+    ['0,2', [0.2]],
+    ['1 4 4 0', [1, 4, 4, 0]],
+  ];
+  for (const [texto, esperado] of casos) {
+    assert.deepEqual(interpretarPolinomio(texto), esperado, texto);
+  }
+  for (const texto of ['(s+', 'abc', '', 's^-1']) {
+    assert.equal(interpretarPolinomio(texto), null, texto);
+  }
+});
+
+teste('especificacao por Mp e tempo de pico', () => {
+  const d = interpretarEspecificacao({ modo: 'pico', sobressinal: 10, tempoDePico: 1 });
+  perto(d.omegaD, Math.PI, 1e-12);
+  perto(d.zeta, amortecimentoDoSobressinal(10), 1e-12);
+});
+
+teste('especificacao por zeta e ts', () => {
+  const d = interpretarEspecificacao({ modo: 'amortecimentoAcomodacao', zeta: 0.6, acomodacao: 2, criterio: 2 });
+  perto(d.sigma, 2, 1e-12);
+  perto(d.omegaN, 2 / 0.6, 1e-12);
+});
+
+teste('especificacao por ts e tempo de pico', () => {
+  const d = interpretarEspecificacao({ modo: 'acomodacaoPico', acomodacao: 2, criterio: 2, tempoDePico: 1 });
+  perto(d.sigma, 2, 1e-12);
+  perto(d.omegaD, Math.PI, 1e-12);
+});
+
+teste('compensador com zero dado acha o polo e K', () => {
+  const projeto = projetarControlador({
+    nG: [1], dG: [1, 2, 0], nH: [1], dH: [1],
+    controlador: 'compensador-zero', fixo: 1,
+    especificacao: { modo: 'polos', real: -2, imaginario: 2 },
+  });
+  polosDesejadosEmMalhaFechada(projeto);
+  perto(projeto.zero.valor, 8 / 3, 1e-9);
+  perto(projeto.modulo.kc, 16 / 3, 1e-9);
+});
+
+teste('compensador com polo dado acha o zero e K', () => {
+  const projeto = projetarControlador({
+    nG: [1], dG: [1, 2, 0], nH: [1], dH: [1],
+    controlador: 'compensador-polo', fixo: 10,
+    especificacao: { modo: 'polos', real: -2, imaginario: 2 },
+  });
+  polosDesejadosEmMalhaFechada(projeto);
+  perto(projeto.zero.valor, 3.2, 1e-9);
+  perto(projeto.modulo.kc, 20, 1e-9);
+});
+
+teste('compensador sem o valor dado e recusado', () => {
+  assert.throws(
+    () => projetarControlador({
+      nG: [1], dG: [1, 2, 0], nH: [1], dH: [1],
+      controlador: 'compensador-zero', fixo: null,
+      especificacao: { modo: 'polos', real: -2, imaginario: 2 },
+    }),
+    /informe o zero dado/,
+  );
+});
+
+teste('constantes de erro do exemplo do PI da apostila', () => {
+  const erro = constantesDeErro([2], [1, 2, 0]);
+  assert.equal(erro.tipo, 1);
+  assert.equal(erro.kp, Infinity);
+  perto(erro.kv, 1, 1e-12);
+  assert.equal(erro.ka, 0);
+  perto(erro.erroRampa, 1, 1e-12);
+});
+
+teste('atraso de fase do exemplo 4.6 da apostila', () => {
+  const projeto = projetarAtraso({
+    nG: [5], dG: [1, 2, 0], nH: [1], dH: [1],
+    atraso: { zeta: null, constante: 20, zero: 0.1 },
+  });
+  perto(projeto.parte.atual, 2.5, 1e-12);
+  perto(projeto.parte.beta, 8, 1e-12);
+  perto(projeto.parte.polo, 0.0125, 1e-12);
+  perto(projeto.constanteFinal, 20, 1e-9);
+});
+
+teste('ganho na reta de zeta do exercicio 2b da apostila', () => {
+  const ajuste = ganhoNaRetaDeAmortecimento([820], [1, 30, 200, 0], 0.6);
+  perto(ajuste.ganho, 1, 2e-3);
+  perto(-ajuste.ponto.re / ajuste.omegaN, 0.6, 1e-9);
+});
+
+teste('atraso-avanco do exemplo 4.7 da apostila', () => {
+  const projeto = projetarControlador({
+    nG: [4], dG: [1, 0.5, 0], nH: [1], dH: [1],
+    controlador: 'atraso-avanco', fixo: 0.5,
+    especificacao: { modo: 'amortecimento', zeta: 0.5, omegaN: 5 },
+    atraso: { constante: 80, zero: 0.2 },
+  });
+  perto(projeto.zero.valor, 5, 1e-6);
+  perto(projeto.modulo.kc, 6.25, 1e-6);
+  perto(projeto.atraso.beta, 16, 1e-6);
+  perto(projeto.atraso.polo, 0.0125, 1e-9);
+});
+
+teste('invariancia ao degrau bate com as formas fechadas', () => {
+  const T = 0.5;
+  const a = 2;
+  const e = Math.exp(-a * T);
+  let d = discretizar([1], [1, a], 'degrau', T);
+  perto(d.numeradorZ[0], (1 - e) / a, 1e-12);
+  perto(d.denominadorZ[1], -e, 1e-12);
+  d = discretizar([1], [1, 0, 0], 'degrau', T);
+  assert.deepEqual(d.numeradorZ.map((v) => Number(v.toFixed(12))), [0.125, 0.125]);
+  assert.deepEqual(d.denominadorZ.map((v) => Number(v.toFixed(12))), [1, -2, 1]);
+  assert.throws(() => discretizar([1, 1], [1], 'degrau', T), /própria/);
+});
+
+teste('Ziegler-Nichols bate com os exemplos da apostila', () => {
+  const primeiro = primeiroMetodo(0.19104, 2.0041)[2];
+  perto(primeiro.kp, 12.5886, 1e-3);
+  perto(primeiro.ti, 0.3821, 1e-4);
+  perto(primeiro.td, 0.0955, 1e-4);
+  const segundo = segundoMetodo(4, 6.3)[2];
+  perto(segundo.kp, 2.4, 1e-12);
+  perto(segundo.ti, 3.15, 1e-12);
+  perto(segundo.td, 0.7875, 1e-12);
+});
+
+teste('ganho critico de 1/(s(s+1)(s+5))', () => {
+  const critico = pontoCritico([1], [1, 6, 5, 0]);
+  perto(critico.ganhoCritico, 30, 1e-6);
+  perto(critico.omega, Math.sqrt(5), 1e-6);
+  assert.equal(pontoCritico([1], [1, 1]), null);
 });
 
 console.log(`\n${executados - falhas}/${executados} testes passaram`);

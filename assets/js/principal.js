@@ -5,6 +5,7 @@ import { montarApresentacao, esconderRoteiro, questaoSelecionada } from './inter
 import { aplicarEndereco, atualizarEndereco } from './interface/endereco.js';
 import { conectarImpressao } from './interface/ferramentas.js';
 import { renderizarResultado } from './interface/resultado.js';
+import { montarFerramentas } from './interface/avulsas.js';
 
 function executar(destino, rolar = true) {
   const leitura = lerFormulario();
@@ -43,6 +44,7 @@ function iniciar() {
   conectarModos();
   montarApresentacao(!veioDoEndereco);
   conectarImpressao();
+  montarFerramentas();
 
   formulario.addEventListener('submit', (evento) => {
     evento.preventDefault();

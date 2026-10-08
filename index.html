@@ -106,8 +106,8 @@
       </div>
 
       <p class="dica">
-        Coeficientes separados por espaço, em ordem decrescente de s. Por exemplo,
-        <code>1 4 4 0</code> vale <code>s³ + 4s² + 4s</code>.
+        Digite a expressão, como <code>5(s+3)</code>, <code>s(s+4)</code> ou <code>(s+2)^2</code>, ou os
+        coeficientes em ordem decrescente de s: <code>1 4 4 0</code> vale <code>s³ + 4s² + 4s</code>.
       </p>
 
       <div class="colunas colunas-2 blocos">
@@ -120,17 +120,40 @@
               <option value="pi">PI</option>
               <option value="pid">PID com zeros reais e iguais</option>
               <option value="polo">a/(s + b), polo e ganho livres</option>
+              <option value="compensador-zero">K(s + z)/(s + p), zero dado</option>
+              <option value="compensador-polo">K(s + z)/(s + p), polo dado</option>
+              <option value="atraso-avanco">Atraso-avanço de fase</option>
+              <option value="atraso">Atraso de fase, pelo erro</option>
             </select>
+          </label>
+          <label class="campo" data-fixo hidden>
+            <span id="rotulo-fixo">Zero dado z, fator (s + z)</span>
+            <input id="valor-fixo" type="text" inputmode="decimal" value="1" autocomplete="off">
+          </label>
+          <div class="campos-duplos" data-atraso hidden>
+            <label class="campo">
+              <span>Constante desejada (K<sub>p</sub>, K<sub>v</sub> ou K<sub>a</sub>)</span>
+              <input id="constante-desejada" type="text" inputmode="decimal" value="" autocomplete="off">
+            </label>
+            <label class="campo">
+              <span>Zero do atraso z (perto da origem)</span>
+              <input id="zero-atraso" type="text" inputmode="decimal" value="0.1" autocomplete="off">
+            </label>
+          </div>
+          <label class="campo" data-zeta-atraso hidden>
+            <span>ζ dos polos dominantes (em branco: mantém o ganho de G)</span>
+            <input id="zeta-atraso" type="text" inputmode="decimal" value="" autocomplete="off">
           </label>
           <div class="previa" id="previa-controlador"></div>
 
-          <label class="campo">
+          <label class="campo" data-escolha-discretizacao>
             <span>Discretização</span>
             <select id="discretizacao">
               <option value="nenhuma" selected>Não discretizar</option>
-              <option value="tustin">Tustin (bilinear)</option>
-              <option value="euler">Euler (diferença para frente)</option>
-              <option value="euler-atraso">Euler (diferença para trás)</option>
+              <option value="tustin">Tustin (trapezoidal)</option>
+              <option value="euler">Euler ou Forward, s = (z − 1)/T</option>
+              <option value="euler-atraso">Backward, s = (z − 1)/(Tz)</option>
+              <option value="degrau">Invariância ao degrau (SOZ)</option>
             </select>
           </label>
           <div class="campos-duplos" data-discretizacao hidden>
@@ -143,57 +166,59 @@
               <select id="alvo">
                 <option value="controlador" selected>Controlador Gc(s)</option>
                 <option value="malha">Malha aberta Gc(s)G(s)H(s)</option>
+                <option value="planta">Planta G(s)</option>
               </select>
             </label>
           </div>
         </fieldset>
 
-        <fieldset class="grupo">
+        <fieldset class="grupo" data-especificacao>
           <legend>Especificação de malha fechada</legend>
           <label class="campo">
             <span>Informar por</span>
             <select id="modo">
               <option value="desempenho" selected>Sobressinal e tempo de acomodação</option>
+              <option value="pico">Sobressinal e tempo de pico</option>
+              <option value="amortecimentoAcomodacao">Fator de amortecimento e tempo de acomodação</option>
+              <option value="acomodacaoPico">Tempo de acomodação e tempo de pico</option>
               <option value="amortecimento">Fator de amortecimento e frequência natural</option>
               <option value="polos">Polos desejados</option>
             </select>
           </label>
 
-          <div class="campos-triplos" data-modo="desempenho">
-            <label class="campo">
+          <div class="campos-triplos">
+            <label class="campo" data-campo="sobressinal">
               <span>M<sub>P</sub> máximo (%)</span>
               <input id="sobressinal" type="text" inputmode="decimal" value="10" autocomplete="off">
             </label>
-            <label class="campo">
+            <label class="campo" data-campo="zeta" hidden>
+              <span>ζ</span>
+              <input id="zeta" type="text" inputmode="decimal" value="0.7" autocomplete="off">
+            </label>
+            <label class="campo" data-campo="omegaN" hidden>
+              <span>ω<sub>n</sub> (rad/s)</span>
+              <input id="omega-n" type="text" inputmode="decimal" value="0.5" autocomplete="off">
+            </label>
+            <label class="campo" data-campo="acomodacao">
               <span>t<sub>s</sub> máximo (s)</span>
               <input id="acomodacao" type="text" inputmode="decimal" value="4" autocomplete="off">
             </label>
-            <label class="campo">
+            <label class="campo" data-campo="criterio">
               <span>Critério</span>
               <select id="criterio">
                 <option value="2">2%</option>
                 <option value="5" selected>5%</option>
               </select>
             </label>
-          </div>
-
-          <div class="campos-duplos" data-modo="amortecimento" hidden>
-            <label class="campo">
-              <span>ζ</span>
-              <input id="zeta" type="text" inputmode="decimal" value="0.7" autocomplete="off">
+            <label class="campo" data-campo="tempoPico" hidden>
+              <span>t<sub>p</sub> (s)</span>
+              <input id="tempo-pico" type="text" inputmode="decimal" value="1" autocomplete="off">
             </label>
-            <label class="campo">
-              <span>ω<sub>n</sub> (rad/s)</span>
-              <input id="omega-n" type="text" inputmode="decimal" value="0.5" autocomplete="off">
-            </label>
-          </div>
-
-          <div class="campos-duplos" data-modo="polos" hidden>
-            <label class="campo">
+            <label class="campo" data-campo="poloReal" hidden>
               <span>Parte real</span>
               <input id="polo-real" type="text" inputmode="decimal" value="-4" autocomplete="off">
             </label>
-            <label class="campo">
+            <label class="campo" data-campo="poloImaginario" hidden>
               <span>Parte imaginária (±)</span>
               <input id="polo-imaginario" type="text" inputmode="decimal" value="4" autocomplete="off">
             </label>
@@ -203,6 +228,74 @@
 
       <button class="botao" type="submit">Projetar controlador</button>
     </form>
+
+    <section class="painel ferramentas" id="ferramentas">
+      <header class="ferramentas-cabecalho">
+        <h2>Ferramentas avulsas</h2>
+        <p>Contas que não dependem do projeto acima.</p>
+      </header>
+      <label class="campo">
+        <span>Ferramenta</span>
+        <select id="ferramenta">
+          <option value="discretizar" selected>Discretizar uma função G(s)</option>
+          <option value="zn1">Ziegler-Nichols, 1º método (L e T da curva em S)</option>
+          <option value="zn2">Ziegler-Nichols, 2º método (K<sub>cr</sub> e P<sub>cr</sub>)</option>
+        </select>
+      </label>
+
+      <div class="campos-duplos" data-ferramenta="discretizar">
+        <label class="campo">
+          <span>Numerador de G(s)</span>
+          <input id="ferramenta-numerador" type="text" value="1" autocomplete="off" spellcheck="false">
+        </label>
+        <label class="campo">
+          <span>Denominador de G(s)</span>
+          <input id="ferramenta-denominador" type="text" value="s+2" autocomplete="off" spellcheck="false">
+        </label>
+      </div>
+      <div class="campos-duplos" data-ferramenta="discretizar">
+        <label class="campo">
+          <span>Método</span>
+          <select id="ferramenta-metodo">
+            <option value="euler">Euler ou Forward</option>
+            <option value="euler-atraso">Backward</option>
+            <option value="tustin" selected>Tustin (trapezoidal)</option>
+            <option value="degrau">Invariância ao degrau (SOZ)</option>
+          </select>
+        </label>
+        <label class="campo">
+          <span>Período T (s)</span>
+          <input id="ferramenta-periodo" type="text" inputmode="decimal" value="0.1" autocomplete="off">
+        </label>
+      </div>
+
+      <div class="campos-duplos" data-ferramenta="zn1" hidden>
+        <label class="campo">
+          <span>Atraso L (s)</span>
+          <input id="ferramenta-l" type="text" inputmode="decimal" value="0.2" autocomplete="off">
+        </label>
+        <label class="campo">
+          <span>Constante de tempo T (s)</span>
+          <input id="ferramenta-t" type="text" inputmode="decimal" value="2" autocomplete="off">
+        </label>
+      </div>
+
+      <div data-ferramenta="zn2" hidden>
+        <div class="campos-duplos">
+          <label class="campo">
+            <span>Ganho crítico K<sub>cr</sub></span>
+            <input id="ferramenta-kcr" type="text" inputmode="decimal" value="" autocomplete="off">
+          </label>
+          <label class="campo">
+            <span>Período crítico P<sub>cr</sub> (s)</span>
+            <input id="ferramenta-pcr" type="text" inputmode="decimal" value="" autocomplete="off">
+          </label>
+        </div>
+        <p class="dica">Em branco, K<sub>cr</sub> e P<sub>cr</sub> saem de G(s)H(s) do formulário acima.</p>
+      </div>
+
+      <button class="botao" type="button" id="calcular-ferramenta">Calcular</button>
+    </section>
 
     <section class="roteiro" id="roteiro">
       <h2 class="roteiro-titulo">O que você vai ver</h2>

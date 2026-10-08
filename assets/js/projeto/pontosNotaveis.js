@@ -1,4 +1,5 @@
 import * as C from '../nucleo/complexo.js';
+import { zerosFixosComoPontos, polosFixosComoPontos } from './controladores.js';
 
 function acrescentar(destino, lista) {
   for (const ponto of lista || []) {
@@ -17,8 +18,9 @@ export function pontosNotaveis(projeto, opcoes = {}) {
     acrescentar(pontos, [projeto.desempenho.polo, C.conjugado(projeto.desempenho.polo)]);
   }
 
-  if (opcoes.poloDoControlador !== false && projeto.controlador && projeto.controlador.polosNaOrigem > 0) {
-    acrescentar(pontos, [C.complexo(0)]);
+  if (opcoes.poloDoControlador !== false && projeto.controlador) {
+    acrescentar(pontos, polosFixosComoPontos(projeto.controlador));
+    acrescentar(pontos, zerosFixosComoPontos(projeto.controlador));
   }
 
   if (opcoes.zeroDoControlador !== false && projeto.zero) {

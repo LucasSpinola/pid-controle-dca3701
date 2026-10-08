@@ -22,24 +22,36 @@ function formaParalelaNumerica(controlador, ganhos) {
   return termos.join(' + ');
 }
 
-function renderizarPolo(destino, projeto) {
-  const { controlador, zero, modulo } = projeto;
+function renderizarDireto(destino, projeto) {
+  const { zero, modulo, malhaFechada, atraso } = projeto;
+  const controlador = projeto.controladorFinal || projeto.controlador;
+  const ganho = controlador.simboloGanho;
+  const livre = controlador.simboloLivre;
   paragrafo(destino, 'Os parâmetros saem direto dos dois critérios:');
   formula(
     destino,
-    `a = ${numeroLatex(modulo.kc)} \\quad (\\text{critério de módulo}), \\qquad b = ${numeroLatex(zero.valor)} \\quad (\\text{critério de ângulo})`,
+    `${ganho} = ${numeroLatex(modulo.kc)} \\quad (\\text{critério de módulo}), \\qquad ${livre} = ${numeroLatex(zero.valor)} \\quad (\\text{critério de ângulo})`,
   );
 
   separador(destino);
   paragrafo(destino, '**Controlador projetado:**');
   formula(destino, `G_c(s) = ${formaFatoradaLatex(controlador, zero.valor, numeroLatex(modulo.kc))}`);
-  aviso(destino, 'sucesso', `**Controlador:** $a = ${numeroLatex(modulo.kc)}$, $b = ${numeroLatex(zero.valor)}$`);
+  formula(
+    destino,
+    `G_c(s) = ${razaoLatex(malhaFechada.numeradorControlador, malhaFechada.denominadorControlador)}`,
+  );
+  aviso(
+    destino,
+    'sucesso',
+    `**Controlador:** $${ganho} = ${numeroLatex(modulo.kc)}$, $${livre} = ${numeroLatex(zero.valor)}$`
+    + (atraso ? `, atraso com $z = ${numeroLatex(atraso.zero)}$ e $p = ${numeroLatex(atraso.polo)}$` : ''),
+  );
 }
 
 export function renderizar(destino, projeto) {
   const { controlador, zero, modulo, ganhos, malhaFechada } = projeto;
-  if (controlador.polosLivres > 0) {
-    renderizarPolo(destino, projeto);
+  if (!formaParalelaLatex(controlador)) {
+    renderizarDireto(destino, projeto);
     return;
   }
 

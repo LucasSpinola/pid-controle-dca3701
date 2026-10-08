@@ -1,4 +1,13 @@
-import { CAMPOS, CAMPOS_FIXOS, CAMPOS_POR_MODO, CAMPOS_DA_DISCRETIZACAO, campo } from './formulario.js';
+import {
+  CAMPOS,
+  CAMPOS_FIXOS,
+  CAMPOS_POR_MODO,
+  CAMPOS_DA_DISCRETIZACAO,
+  campo,
+  tipoDoFixo,
+  usaAtraso,
+  soAtraso,
+} from './formulario.js';
 
 export function aplicarEndereco() {
   const parametros = new URLSearchParams(window.location.search);
@@ -17,6 +26,9 @@ export function atualizarEndereco() {
   const parametros = new URLSearchParams();
   const nomes = [
     ...CAMPOS_FIXOS,
+    ...(tipoDoFixo(campo('controlador').value) ? ['fixo'] : []),
+    ...(usaAtraso(campo('controlador').value) ? ['constante', 'zeroAtraso'] : []),
+    ...(soAtraso(campo('controlador').value) ? ['zetaAtraso'] : []),
     ...(CAMPOS_POR_MODO[campo('modo').value] || []),
     ...(campo('discretizacao').value !== 'nenhuma' ? CAMPOS_DA_DISCRETIZACAO : []),
   ];

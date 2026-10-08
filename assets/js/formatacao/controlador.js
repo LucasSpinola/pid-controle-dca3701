@@ -5,9 +5,11 @@ const RELACOES = {
   pi: { kp: 'K_c', ki: 'K_c\\,z' },
   pid: { kp: '2K_c\\,z', ki: 'K_c\\,z^2', kd: 'K_c' },
   polo: { a: 'a', b: 'b' },
+  'compensador-zero': { k: 'K', p: 'p' },
+  'compensador-polo': { k: 'K', z: 'z' },
 };
 
-const SIMBOLOS = { kp: 'K_p', ki: 'K_i', kd: 'K_d', a: 'a', b: 'b' };
+const SIMBOLOS = { kp: 'K_p', ki: 'K_i', kd: 'K_d', a: 'a', b: 'b', k: 'K', p: 'p', z: 'z' };
 
 export function fatorDoZeroLatex(valor) {
   if (typeof valor === 'string') {
@@ -19,8 +21,12 @@ export function fatorDoZeroLatex(valor) {
   return valor > 0 ? `(s + ${numeroLatex(valor)})` : `(s - ${numeroLatex(-valor)})`;
 }
 
+function temFixos(controlador) {
+  return (controlador.zerosFixos || []).length + (controlador.polosFixos || []).length > 0 || Boolean(controlador.fixo);
+}
+
 export function formaParalelaLatex(controlador) {
-  if (controlador.polosLivres > 0) {
+  if (controlador.polosLivres > 0 || temFixos(controlador)) {
     return null;
   }
   const termos = ['K_p'];
@@ -33,21 +39,41 @@ export function formaParalelaLatex(controlador) {
   return termos.join(' + ');
 }
 
+function potenciaLatex(fator, expoente) {
+  if (expoente === 0) {
+    return '';
+  }
+  return expoente > 1 ? `${fator}^{${expoente}}` : fator;
+}
+
+function fatorFixoLatex(controlador, tipo) {
+  const valores = tipo === 'zero' ? controlador.zerosFixos || [] : controlador.polosFixos || [];
+  if (valores.length > 0) {
+    return valores.map(fatorDoZeroLatex).join('');
+  }
+  return controlador.fixo === tipo ? `(s + ${tipo === 'zero' ? 'z' : 'p'})` : '';
+}
+
 export function formaFatoradaLatex(controlador, livre = controlador.simboloLivre, ganho = controlador.simboloGanho) {
   const fator = fatorDoZeroLatex(livre);
-  if (controlador.polosLivres > 0) {
-    const denominador = controlador.polosLivres > 1 ? `${fator}^{${controlador.polosLivres}}` : fator;
-    return `\\dfrac{${ganho}}{${denominador}}`;
-  }
-  const numerador = controlador.zeros > 1 ? `${fator}^{${controlador.zeros}}` : fator;
-  if (controlador.polosNaOrigem === 0) {
+  const numerador = potenciaLatex(fator, controlador.zeros) + fatorFixoLatex(controlador, 'zero');
+  const denominador = potenciaLatex('s', controlador.polosNaOrigem)
+    + potenciaLatex(fator, controlador.polosLivres)
+    + fatorFixoLatex(controlador, 'polo');
+
+  if (!denominador) {
     return `${ganho}\\,${numerador}`;
   }
-  const denominador = controlador.polosNaOrigem > 1 ? `s^{${controlador.polosNaOrigem}}` : 's';
+  if (!numerador) {
+    return `\\dfrac{${ganho}}{${denominador}}`;
+  }
   return `${ganho}\\,\\dfrac{${numerador}}{${denominador}}`;
 }
 
 export function controladorLatex(controlador) {
+  if (controlador.latex) {
+    return `G_c(s) = ${controlador.latex}`;
+  }
   const paralela = formaParalelaLatex(controlador);
   const fatorada = formaFatoradaLatex(controlador);
   return paralela ? `G_c(s) = ${paralela} = ${fatorada}` : `G_c(s) = ${fatorada}`;

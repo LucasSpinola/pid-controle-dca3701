@@ -1,5 +1,10 @@
 import * as C from '../nucleo/complexo.js';
-import { livreEhPolo, quantidadeLivre } from './controladores.js';
+import {
+  livreEhPolo,
+  quantidadeLivre,
+  zerosFixosComoPontos,
+  polosFixosComoPontos,
+} from './controladores.js';
 
 const FOLGA_ANGULAR = 1e-6;
 
@@ -18,11 +23,17 @@ function contribuicaoDeModulo(ponto, referencia, origem) {
 }
 
 function polosDoConjunto(malhaAberta, controlador, livre = null) {
-  const origem = new Array(controlador.polosNaOrigem).fill(null).map(() => C.complexo(0));
   const livres = livre ? new Array(controlador.polosLivres).fill(livre) : [];
   return [
     ...malhaAberta.polos.map((p) => ({ ponto: p, origem: 'planta' })),
-    ...[...origem, ...livres].map((p) => ({ ponto: p, origem: 'controlador' })),
+    ...[...polosFixosComoPontos(controlador), ...livres].map((p) => ({ ponto: p, origem: 'controlador' })),
+  ];
+}
+
+function zerosConhecidos(malhaAberta, controlador) {
+  return [
+    ...malhaAberta.zeros.map((z) => ({ ponto: z, origem: 'planta' })),
+    ...zerosFixosComoPontos(controlador).map((z) => ({ ponto: z, origem: 'controlador' })),
   ];
 }
 
@@ -37,7 +48,8 @@ function motivoDeInviabilidade(porSingularidade) {
 }
 
 export function criterioDeAngulo(polo, malhaAberta, controlador) {
-  const contribuicaoZeros = malhaAberta.zeros.map((z) => contribuicaoAngular(polo, z, 'planta'));
+  const contribuicaoZeros = zerosConhecidos(malhaAberta, controlador)
+    .map((item) => contribuicaoAngular(polo, item.ponto, item.origem));
   const contribuicaoPolos = polosDoConjunto(malhaAberta, controlador)
     .map((item) => contribuicaoAngular(polo, item.ponto, item.origem));
 
@@ -84,7 +96,7 @@ export function localizarZero(polo, angulo) {
 export function criterioDeModulo(polo, malhaAberta, controlador, zero) {
   const zerosDoControlador = new Array(controlador.zeros).fill(zero.ponto);
   const distanciasZeros = [
-    ...malhaAberta.zeros.map((z) => contribuicaoDeModulo(polo, z, 'planta')),
+    ...zerosConhecidos(malhaAberta, controlador).map((item) => contribuicaoDeModulo(polo, item.ponto, item.origem)),
     ...zerosDoControlador.map((z) => contribuicaoDeModulo(polo, z, 'controlador')),
   ];
   const distanciasPolos = polosDoConjunto(malhaAberta, controlador, zero.ponto)

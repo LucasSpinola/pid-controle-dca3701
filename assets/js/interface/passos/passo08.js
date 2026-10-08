@@ -1,6 +1,6 @@
 import { formula, paragrafo, separador, aviso, quadroDeGrafico } from '../componentes.js';
 import { polinomioLatex, razaoLatex, complexoLatex } from '../../formatacao/latex.js';
-import { fixoLatex } from '../../formatacao/numero.js';
+import { fixoLatex, numeroLatex } from '../../formatacao/numero.js';
 import { criarPlano } from '../../grafico/fabrica.js';
 import {
   desenharPolosZeros,
@@ -9,6 +9,7 @@ import {
   desenharRetasDeAmortecimento,
 } from '../../grafico/camadas.js';
 import { RAZAO_DE_DOMINANCIA } from '../../projeto/malhaFechada.js';
+import { constantesDeErro } from '../../projeto/erroEstatico.js';
 
 export const titulo = '**Passo 8:** Malha fechada e dominância';
 export const requerViabilidade = true;
@@ -51,6 +52,45 @@ function concluirDominancia(destino, malhaFechada) {
   );
 }
 
+function constanteLatex(valor) {
+  if (!Number.isFinite(valor)) {
+    return '\\infty';
+  }
+  return numeroLatex(valor);
+}
+
+function erroLatex(valor) {
+  if (!Number.isFinite(valor)) {
+    return '\\infty';
+  }
+  return numeroLatex(valor);
+}
+
+function renderizarErroEstatico(destino, projeto) {
+  const { malhaFechada, entrada } = projeto;
+  const erro = constantesDeErro(malhaFechada.numeradorAberto, malhaFechada.denominadorAberto);
+  const realimentacaoUnitaria = entrada.nH.length === 1 && entrada.dH.length === 1 && entrada.nH[0] === entrada.dH[0];
+
+  paragrafo(
+    destino,
+    `**Constantes de erro estático** de $G_c(s)G(s)H(s)$, sistema tipo ${erro.tipo}:`,
+  );
+  formula(
+    destino,
+    `K_p = \\lim_{s \\to 0} G_cGH = ${constanteLatex(erro.kp)}, \\qquad K_v = \\lim_{s \\to 0} s\\,G_cGH = ${constanteLatex(erro.kv)}, \\qquad K_a = \\lim_{s \\to 0} s^2 G_cGH = ${constanteLatex(erro.ka)}`,
+  );
+  formula(
+    destino,
+    `e_{\\text{degrau}} = \\frac{1}{1 + K_p} = ${erroLatex(erro.erroDegrau)}, \\qquad e_{\\text{rampa}} = \\frac{1}{K_v} = ${erroLatex(erro.erroRampa)}, \\qquad e_{\\text{parábola}} = \\frac{1}{K_a} = ${erroLatex(erro.erroParabola)}`,
+  );
+  if (!realimentacaoUnitaria) {
+    paragrafo(
+      destino,
+      'Com $H(s) \\ne 1$, esses erros valem para o sinal atuante $E(s) = R(s) - H(s)C(s)$, não para $r - c$.',
+    );
+  }
+}
+
 export function renderizar(destino, projeto) {
   const { malhaFechada, desempenho, malhaAberta, controlador } = projeto;
 
@@ -79,6 +119,9 @@ export function renderizar(destino, projeto) {
   }
 
   concluirDominancia(destino, malhaFechada);
+
+  separador(destino);
+  renderizarErroEstatico(destino, projeto);
 
   separador(destino);
   const pontos = [

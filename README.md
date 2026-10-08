@@ -28,8 +28,12 @@ projeto na resposta ao degrau simulada e, se pedido, discretiza o resultado.
 |---|---|
 | **PD, PI e PID** | o PID usa zeros reais e iguais, $G_c(s) = K_c (s+z)^2 / s$ |
 | **Controlador $a/(s+b)$** | polo e ganho livres: o ângulo dá $b$ e o módulo dá $a$ |
-| **Discretização** | Tustin, Euler para frente ou para trás, do controlador ou de $G_c G H$, com equação de diferenças |
-| **Três formas de especificar** | $M_P$ e $t_s$ (2% ou 5%), $\zeta$ e $\omega_n$, ou os próprios polos desejados |
+| **Compensador $K(s+z)/(s+p)$** | com o zero ou o polo dado, o ângulo acha o outro e o módulo dá $K$ (avanço de fase) |
+| **Atraso e atraso-avanço** | atraso pelo erro, com $\beta = K^{\text{comp}}/K$; atraso-avanço com a parte em avanço pelos critérios e a em atraso pelo $\beta$ |
+| **Discretização** | Euler (Forward), Backward, Tustin ou invariância ao degrau (SOZ), do controlador, de $G_c G H$ ou de $G(s)$ |
+| **Ferramentas avulsas** | discretizar qualquer $G(s)$ e Ziegler-Nichols, 1º e 2º métodos, com $K_{cr}$ e $P_{cr}$ tirados do modelo se preciso |
+| **Seis formas de especificar** | $M_P$ e $t_s$, $M_P$ e $t_p$, $\zeta$ e $t_s$, $t_s$ e $t_p$, $\zeta$ e $\omega_n$, ou os próprios polos desejados |
+| **Entrada fatorada** | $G(s)$ e $H(s)$ aceitam `5(s+3)`, `s(s+4)`, `(s+2)^2` ou a lista de coeficientes |
 | **A conta, não só o resultado** | fórmula, substituição e resultado de cada passo, em LaTeX |
 | **Projeto conferido** | polos de malha fechada, dominância e resposta ao degrau exata em espaço de estados |
 | **Questões da lista** | cada questão do 1º e do 2º exercício preenche o formulário com um clique |
@@ -45,11 +49,16 @@ projeto na resposta ao degrau simulada e, se pedido, discretiza o resultado.
 | 3 | Malha aberta | $G(s)H(s)$, polos, zeros, cancelamentos e a forma de $G_c(s)$ |
 | 4 | Critério de ângulo | contribuição de cada polo e zero em $s_d$ e a deficiência angular $\phi_c$ |
 | 5 | Zero ou polo do controlador | $z = \sigma + \omega_d / \tan\phi_z$ (ou $b$, para $a/(s+b)$) |
-| 6 | Critério de módulo | produto das distâncias e o ganho $K_c$ (ou $a$) |
+| 6 | Critério de módulo | ganho total $K_t$ e o ganho do controlador $K_c = K_t/k$ |
+| 6b | Parte em atraso | constante de erro atual, $\beta$, zero e polo do atraso (só no atraso-avanço) |
 | 7 | Ganhos | $K_p$, $K_i$ e $K_d$ e o controlador nas formas fatorada e paralela |
 | 8 | Malha fechada | $T(s)$, polos de malha fechada e a verificação de dominância |
 | 9 | Resposta ao degrau | $M_P$, $t_p$ e $t_s$ simulados contra a referência de segunda ordem |
 | 10 | Discretização | substituição de $s$, $G(z)$ em $z$ e $z^{-1}$, equação de diferenças e polos discretos (só quando pedida) |
+
+O passo 8 também traz as constantes de erro estático $K_p$, $K_v$ e $K_a$. O atraso de fase puro segue
+o roteiro da apostila (seção 4.6) em cinco passos próprios: ganho de malha aberta, $\beta$, controlador,
+polos com e sem o atraso e resposta ao degrau comparada.
 
 Depois dos passos vem o LGR do sistema compensado, com os polos de malha fechada no ganho projetado.
 Quando o critério de ângulo não tem solução para o controlador escolhido, o roteiro para no passo 4 e
@@ -68,9 +77,10 @@ npm start                    # ou: python -m http.server 8000
 
 Depois abra <http://localhost:8000>.
 
-**Como usar:** coeficientes em ordem decrescente de $s$, separados por espaço — `1 4 4 0` é
-$s^3 + 4s^2 + 4s$. Escolha o controlador, a forma da especificação e clique em
-**Projetar controlador**.
+**Como usar:** digite $G(s)$ e $H(s)$ como expressão, por exemplo `5(s+3)` e `s(s+4)`, ou como
+coeficientes em ordem decrescente de $s$, separados por espaço — `1 4 4 0` é $s^3 + 4s^2 + 4s$. A
+prévia abaixo de cada campo mostra o polinômio expandido. Escolha o controlador, a forma da
+especificação e clique em **Projetar controlador**.
 
 **PDF:** o botão **Baixar PDF**, acima do resultado, e o **PDF da lista**, ao lado das questões, abrem a
 impressão do navegador. Escolha **Salvar como PDF** no destino. Todos os passos saem abertos, com os

@@ -55,10 +55,19 @@ export function renderizar(destino, projeto) {
   }
 
   separador(destino);
-  paragrafo(destino, '**Resultado:**');
+  paragrafo(destino, '**Ganho total** da malha em $s_d$:');
+  const ganhoTotal = modulo.produtoPolos / modulo.produtoZeros;
   formula(
     destino,
-    `${ganho} = \\frac{${fixoLatex(modulo.produtoPolos, 4)}}{${numeroLatex(modulo.ganhoDaPlanta)} \\cdot ${fixoLatex(modulo.produtoZeros, 4)}} = ${numeroLatex(modulo.kc)}`,
+    `K_t = \\frac{\\prod |s_d - p_i|}{\\prod |s_d - z_j|} = \\frac{${fixoLatex(modulo.produtoPolos, 4)}}{${fixoLatex(modulo.produtoZeros, 4)}} = ${numeroLatex(ganhoTotal)}`,
+  );
+  paragrafo(
+    destino,
+    `Como $G(s)H(s)$ já tem ganho $k = ${numeroLatex(modulo.ganhoDaPlanta)}$, o ganho do controlador é:`,
+  );
+  formula(
+    destino,
+    `${ganho} = \\frac{K_t}{|k|} = \\frac{${numeroLatex(ganhoTotal)}}{${numeroLatex(modulo.ganhoDaPlanta)}} = ${numeroLatex(modulo.kc)}`,
   );
   aviso(destino, 'sucesso', `$${ganho} = ${numeroLatex(modulo.kc)}$`);
 }

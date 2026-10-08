@@ -13,14 +13,15 @@ import {
 import { pontosNotaveis } from '../../projeto/pontosNotaveis.js';
 
 export function renderizar(pai, projeto) {
-  const { varredura, malhaAberta, controlador, zero, desempenho, malhaFechada, modulo } = projeto;
+  const { varredura, malhaAberta, zero, desempenho, malhaFechada, modulo } = projeto;
+  const controlador = projeto.controladorFinal || projeto.controlador;
   const bloco = elemento('section', 'grafico-final');
   const cabecalho = elemento('div', 'grafico-final-cabecalho');
   cabecalho.appendChild(elemento('h2', 'titulo-secao', 'LGR do sistema compensado'));
   bloco.appendChild(cabecalho);
 
   const plano = criarPlano(
-    pontosNotaveis(projeto, { malhaFechada: true }),
+    pontosNotaveis({ ...projeto, controlador }, { malhaFechada: true }),
     `Lugar geométrico das raízes com o ${controlador.nome}`,
   );
   desenharRetasDeAmortecimento(plano, desempenho.zeta);

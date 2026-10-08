@@ -12,6 +12,7 @@ const FOLGA_DO_CIRCULO = 1e-6;
 const SINAIS = {
   controlador: { nome: 'G_c', saida: 'u', entrada: 'e' },
   malha: { nome: 'G_{MA}', saida: 'y', entrada: 'u' },
+  planta: { nome: 'G', saida: 'y', entrada: 'u' },
 };
 
 export function aplicavel(projeto) {
@@ -78,7 +79,7 @@ function renderizarDiferencas(destino, discretizacao, sinais) {
       'atencao',
       'O numerador ficou com grau maior que o denominador: a função discreta não é causal, e a saída '
       + 'dependeria de amostras futuras. Isso acontece quando a função contínua tem mais zeros que polos '
-      + 'e o método não cria polos novos, como Euler para frente.',
+      + 'e o método não cria polos novos, como Euler (Forward).',
     );
     return;
   }
@@ -128,8 +129,10 @@ function renderizarPolos(destino, discretizacao) {
     aviso(
       destino,
       'informacao',
-      'Há polo sobre o círculo unitário. Um integrador em $s = 0$ vai para $z = 1$, e com Tustin a imagem de '
-      + '$s = \\infty$ é $z = -1$, que aparece quando a função contínua tem mais zeros que polos.',
+      'Há polo sobre o círculo unitário. Um integrador em $s = 0$ vai para $z = 1$'
+      + (discretizacao.id === 'tustin'
+        ? ', e com Tustin a imagem de $s = \\infty$ é $z = -1$, que aparece quando a função contínua tem mais zeros que polos.'
+        : '.'),
     );
   } else {
     aviso(destino, 'sucesso', 'Todos os polos ficaram dentro do círculo unitário.');
@@ -137,15 +140,11 @@ function renderizarPolos(destino, discretizacao) {
 }
 
 export function renderizar(destino, projeto) {
-  const { discretizacao } = projeto;
-  const sinais = SINAIS[discretizacao.alvo];
-  const { metodo, periodo } = discretizacao;
+  renderizarDiscretizacao(destino, projeto.discretizacao);
+}
 
-  paragrafo(destino, `**Função discretizada:** $${ALVOS[discretizacao.alvo]}$`);
-  formula(destino, `${ALVOS[discretizacao.alvo]} = ${razaoLatex(discretizacao.numeradorS, discretizacao.denominadorS)}`);
-
-  separador(destino);
-  paragrafo(destino, `**Método:** ${metodo.nome}, com $T = ${numeroLatex(periodo)}\\,\\text{s}$`);
+function renderizarSubstituicao(destino, discretizacao) {
+  const { metodo } = discretizacao;
   formula(destino, `${metodo.substituicao} = ${razaoLatex(discretizacao.alfa, discretizacao.beta, 'z')}`);
   const beta = P.normalizar(discretizacao.beta);
   if (beta.length === 1 && Math.abs(beta[0] - 1) < 1e-12) {
@@ -158,6 +157,65 @@ export function renderizar(destino, projeto) {
   }
   formula(destino, `N(z) = ${polinomioLatex(discretizacao.numeradorSubstituido, 'z')}`);
   formula(destino, `D(z) = ${polinomioLatex(discretizacao.denominadorSubstituido, 'z')}`);
+}
+
+function fatorDoPoloLatex(polo, variavel) {
+  if (Math.abs(polo.im) < 1e-10) {
+    if (Math.abs(polo.re) < 1e-12) {
+      return variavel;
+    }
+    return polo.re < 0 ? `${variavel} + ${numeroLatex(-polo.re)}` : `${variavel} - ${numeroLatex(polo.re)}`;
+  }
+  return `${variavel} - (${complexoLatex(polo)})`;
+}
+
+function coeficienteLatex(valor) {
+  return Math.abs(valor.im) < 1e-10 ? numeroLatex(valor.re) : `(${complexoLatex(valor)})`;
+}
+
+function renderizarSegurador(destino, discretizacao) {
+  formula(destino, 'H(z) = \\frac{z - 1}{z}\\;\\mathcal{Z}\\left\\{\\frac{G(s)}{s}\\right\\}');
+  const { fracoes } = discretizacao;
+  if (!fracoes) {
+    paragrafo(
+      destino,
+      'Como $G(s)/s$ tem polo repetido, o resultado sai da discretização exata em espaço de estados, com '
+      + '$\\Phi = e^{AT}$ e $\\Gamma = \\int_0^T e^{A\\tau}B\\,d\\tau$, que equivale à mesma fórmula.',
+    );
+    return;
+  }
+  paragrafo(destino, 'Frações parciais de $G(s)/s$:');
+  formula(
+    destino,
+    `\\frac{G(s)}{s} = ${fracoes.map((item) => `\\frac{${coeficienteLatex(item.residuo)}}{${fatorDoPoloLatex(item.polo, 's')}}`).join(' + ')}`,
+  );
+  paragrafo(destino, 'Cada termo $\\frac{r}{s - p}$ vira $\\frac{r\\,z}{z - e^{pT}}$:');
+  formula(
+    destino,
+    `\\mathcal{Z}\\left\\{\\frac{G(s)}{s}\\right\\} = ${fracoes.map((item) => `\\frac{${coeficienteLatex(item.residuo)}\\,z}{${fatorDoPoloLatex(item.amostrado, 'z')}}`).join(' + ')}`,
+  );
+  paragrafo(destino, 'Multiplicando por $\\frac{z - 1}{z}$ e juntando os termos:');
+}
+
+export function renderizarDiscretizacao(destino, discretizacao) {
+  if (discretizacao.erro) {
+    aviso(destino, 'erro', `Não foi possível discretizar: ${discretizacao.erro}`);
+    return;
+  }
+  const sinais = SINAIS[discretizacao.alvo] || SINAIS.planta;
+  const { metodo, periodo } = discretizacao;
+  const nomeContinuo = ALVOS[discretizacao.alvo] || 'G(s)';
+
+  paragrafo(destino, `**Função discretizada:** $${nomeContinuo}$`);
+  formula(destino, `${nomeContinuo} = ${razaoLatex(discretizacao.numeradorS, discretizacao.denominadorS)}`);
+
+  separador(destino);
+  paragrafo(destino, `**Método:** ${metodo.nome}, com $T = ${numeroLatex(periodo)}\\,\\text{s}$`);
+  if (metodo.segurador) {
+    renderizarSegurador(destino, discretizacao);
+  } else {
+    renderizarSubstituicao(destino, discretizacao);
+  }
   if (discretizacao.cancelados > 0) {
     aviso(
       destino,

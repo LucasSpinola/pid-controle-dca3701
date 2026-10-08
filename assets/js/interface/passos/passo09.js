@@ -41,22 +41,43 @@ function montarTabela(referencia, metricas) {
   ].join(' ');
 }
 
-function compararComEspecificacao(destino, desempenho, metricas) {
-  const tempoMedido = desempenho.criterio === 2 ? metricas.acomodacao2 : metricas.acomodacao5;
-  const sobressinalOk = metricas.sobressinal <= desempenho.sobressinal * (1 + FOLGA_DE_COMPARACAO);
-  const tempoOk = tempoMedido <= desempenho.acomodacao * (1 + FOLGA_DE_COMPARACAO);
+function dentroDoLimite(medido, limite) {
+  return medido !== null && Number.isFinite(medido) && medido <= limite * (1 + FOLGA_DE_COMPARACAO);
+}
 
-  aviso(
-    destino,
-    sobressinalOk ? 'sucesso' : 'atencao',
-    `$M_P = ${fixoLatex(metricas.sobressinal, 2)}\\%$ ${sobressinalOk ? 'atende' : 'não atende'} a $M_P \\le ${numeroLatex(desempenho.sobressinal)}\\%$.`,
-  );
-  aviso(
-    destino,
-    tempoOk ? 'sucesso' : 'atencao',
-    `$t_s(${desempenho.criterio}\\%) = ${tempoLatex(tempoMedido)}$ ${tempoOk ? 'atende' : 'não atende'} a $t_s < ${numeroLatex(desempenho.acomodacao)}\\,\\text{s}$.`,
-  );
-  if (!sobressinalOk || !tempoOk) {
+function verificacoes(desempenho, metricas) {
+  const lista = [];
+  if (desempenho.sobressinal !== undefined) {
+    const ok = dentroDoLimite(metricas.sobressinal, desempenho.sobressinal);
+    lista.push({
+      ok,
+      texto: `$M_P = ${fixoLatex(metricas.sobressinal, 2)}\\%$ ${ok ? 'atende' : 'não atende'} a $M_P \\le ${numeroLatex(desempenho.sobressinal)}\\%$.`,
+    });
+  }
+  if (desempenho.acomodacao !== undefined) {
+    const medido = desempenho.criterio === 2 ? metricas.acomodacao2 : metricas.acomodacao5;
+    const ok = dentroDoLimite(medido, desempenho.acomodacao);
+    lista.push({
+      ok,
+      texto: `$t_s(${desempenho.criterio}\\%) = ${tempoLatex(medido)}$ ${ok ? 'atende' : 'não atende'} a $t_s < ${numeroLatex(desempenho.acomodacao)}\\,\\text{s}$.`,
+    });
+  }
+  if (desempenho.tempoDePico !== undefined) {
+    const ok = dentroDoLimite(metricas.tempoDePico, desempenho.tempoDePico);
+    lista.push({
+      ok,
+      texto: `$t_p = ${tempoLatex(metricas.tempoDePico)}$ ${ok ? 'atende' : 'não atende'} a $t_p \\le ${numeroLatex(desempenho.tempoDePico)}\\,\\text{s}$.`,
+    });
+  }
+  return lista;
+}
+
+function compararComEspecificacao(destino, desempenho, metricas) {
+  const lista = verificacoes(desempenho, metricas);
+  for (const item of lista) {
+    aviso(destino, item.ok ? 'sucesso' : 'atencao', item.texto);
+  }
+  if (lista.some((item) => !item.ok)) {
     paragrafo(
       destino,
       'A diferença vem dos polos e zeros que a aproximação de segunda ordem ignora (passo 8). '
@@ -76,10 +97,10 @@ function desenhar(destino, projeto, metricas) {
     'Resposta ao degrau unitário',
   );
 
-  const criterio = desempenho.modo === 'desempenho' ? desempenho.criterio : 2;
+  const criterio = desempenho.criterio || 2;
   desenharFaixa(grafico, metricas.valorFinal, criterio / 100);
   desenharNivel(grafico, metricas.valorFinal, CORES.valorFinal, 'Valor final');
-  if (desempenho.modo === 'desempenho') {
+  if (desempenho.sobressinal !== undefined) {
     desenharNivel(
       grafico,
       metricas.valorFinal * (1 + desempenho.sobressinal / 100),
@@ -87,7 +108,12 @@ function desenhar(destino, projeto, metricas) {
       'Limite de sobressinal',
       '3 3',
     );
+  }
+  if (desempenho.acomodacao !== undefined) {
     desenharInstante(grafico, desempenho.acomodacao, CORES.limite, 'Limite de acomodação');
+  }
+  if (desempenho.tempoDePico !== undefined) {
+    desenharInstante(grafico, desempenho.tempoDePico, CORES.desejado, 'Tempo de pico pedido');
   }
   desenharResposta(grafico, simulacao);
   quadroDeGrafico(destino, grafico.elemento());
@@ -123,9 +149,7 @@ export function renderizar(destino, projeto) {
   separador(destino);
   formula(destino, montarTabela(desempenho.referencia, metricas));
 
-  if (desempenho.modo === 'desempenho') {
-    compararComEspecificacao(destino, desempenho, metricas);
-  }
+  compararComEspecificacao(destino, desempenho, metricas);
 
   separador(destino);
   desenhar(destino, projeto, metricas);

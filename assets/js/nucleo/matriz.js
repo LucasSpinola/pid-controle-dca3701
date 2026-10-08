@@ -5,7 +5,7 @@ export function zeros(linhas, colunas = linhas) {
   return Array.from({ length: linhas }, () => new Array(colunas).fill(0));
 }
 
-function identidade(ordem) {
+export function identidade(ordem) {
   const saida = zeros(ordem);
   for (let i = 0; i < ordem; i += 1) {
     saida[i][i] = 1;
@@ -13,15 +13,15 @@ function identidade(ordem) {
   return saida;
 }
 
-function somar(a, b) {
+export function somar(a, b) {
   return a.map((linha, i) => linha.map((valor, j) => valor + b[i][j]));
 }
 
-function escalar(a, k) {
+export function escalar(a, k) {
   return a.map((linha) => linha.map((valor) => valor * k));
 }
 
-function multiplicar(a, b) {
+export function multiplicar(a, b) {
   const linhas = a.length;
   const colunas = b[0].length;
   const internas = b.length;

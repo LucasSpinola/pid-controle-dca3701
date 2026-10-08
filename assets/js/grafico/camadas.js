@@ -123,7 +123,28 @@ export function desenharPoloDoControlador(plano) {
   plano.registrarLegenda('x', CORES.controlador, 'Polo do controlador');
 }
 
+export function desenharFixosDoControlador(plano, controlador) {
+  const polos = [
+    ...new Array(controlador.polosNaOrigem).fill(null).map(() => ({ re: 0, im: 0 })),
+    ...(controlador.polosFixos || []).map((valor) => ({ re: -valor, im: 0 })),
+  ];
+  const zeros = (controlador.zerosFixos || []).map((valor) => ({ re: -valor, im: 0 }));
+  for (const ponto of polos) {
+    plano.cruz(ponto, { stroke: CORES.controlador, 'stroke-width': 2.6 }, 7);
+  }
+  for (const ponto of zeros) {
+    plano.circulo(ponto, { stroke: CORES.controlador, 'stroke-width': 2.6, fill: 'none' }, 7);
+  }
+  if (polos.length > 0) {
+    plano.registrarLegenda('x', CORES.controlador, controlador.polosNaOrigem > 0 ? 'Polo do controlador' : 'Polo dado do controlador');
+  }
+  if (zeros.length > 0) {
+    plano.registrarLegenda('circulo', CORES.controlador, 'Zero dado do controlador');
+  }
+}
+
 export function desenharControlador(plano, controlador, zero, opcoes = {}) {
+  desenharFixosDoControlador(plano, controlador);
   if (controlador.polosLivres > 0) {
     plano.cruz(zero.ponto, { stroke: CORES.controlador, 'stroke-width': 2.6 }, 7);
     if (opcoes.rotular !== false) {
@@ -145,10 +166,6 @@ export function desenharControlador(plano, controlador, zero, opcoes = {}) {
     CORES.controlador,
     controlador.zeros > 1 ? 'Zero duplo do controlador' : 'Zero do controlador',
   );
-
-  if (controlador.polosNaOrigem > 0) {
-    desenharPoloDoControlador(plano);
-  }
 }
 
 export function desenharVetores(plano, origens, ponto, cor) {
@@ -170,13 +187,15 @@ export function desenharPolosDeMalhaFechada(plano, polos) {
   plano.registrarLegenda('linha', CORES.malhaFechada, 'Polos de malha fechada');
 }
 
-export function desenharResposta(grafico, simulacao) {
+export function desenharResposta(grafico, simulacao, opcoes = {}) {
+  const cor = opcoes.cor || CORES.resposta;
   grafico.curva(simulacao.tempos, simulacao.saidas, {
-    stroke: CORES.resposta,
-    'stroke-width': 2.4,
+    stroke: cor,
+    'stroke-width': opcoes.espessura || 2.4,
     'stroke-linejoin': 'round',
+    ...(opcoes.tracejado ? { 'stroke-dasharray': opcoes.tracejado } : {}),
   });
-  grafico.registrarLegenda('linha', CORES.resposta, 'y(t)');
+  grafico.registrarLegenda('linha', cor, opcoes.legenda || 'y(t)');
 }
 
 export function desenharNivel(grafico, valor, cor, rotulo, tracejado = '6 5') {

@@ -25,7 +25,7 @@ export function realizarEmEspacoDeEstados(numerador, denominador) {
   return { estados, saida, direto, ordem };
 }
 
-function discretizar(estados, ordem, passo) {
+export function discretizarEstados(estados, ordem, passo) {
   const aumentada = M.zeros(ordem + 1);
   for (let i = 0; i < ordem; i += 1) {
     for (let j = 0; j < ordem; j += 1) {
@@ -58,7 +58,7 @@ export function horizonteDeSimulacao(polos, sigma) {
 export function simularDegrau(numerador, denominador, duracao) {
   const { estados, saida, direto, ordem } = realizarEmEspacoDeEstados(numerador, denominador);
   const passo = duracao / (AMOSTRAS - 1);
-  const { transicao, entrada } = discretizar(estados, ordem, passo);
+  const { transicao, entrada } = discretizarEstados(estados, ordem, passo);
 
   const tempos = new Float64Array(AMOSTRAS);
   const saidas = new Float64Array(AMOSTRAS);

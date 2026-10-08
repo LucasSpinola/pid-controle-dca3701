@@ -190,6 +190,34 @@ const CASOS = [
   },
 ];
 
+CASOS.push(
+  {
+    nome: 'compensador com zero dado e Mp com tp',
+    entrada: {
+      nG: [1], dG: [1, 2, 0], nH: [1], dH: [1],
+      controlador: 'compensador-zero', fixo: 1,
+      especificacao: { modo: 'pico', sobressinal: 15, tempoDePico: 1.2 },
+    },
+  },
+  {
+    nome: 'compensador com polo dado e zeta com ts',
+    entrada: {
+      nG: [1], dG: [1, 2, 0], nH: [1], dH: [1],
+      controlador: 'compensador-polo', fixo: 10,
+      especificacao: { modo: 'amortecimentoAcomodacao', zeta: 0.6, acomodacao: 2, criterio: 2 },
+      discretizacao: { metodo: 'tustin', periodo: 0.1, alvo: 'controlador' },
+    },
+  },
+  {
+    nome: 'PI com ts e tempo de pico',
+    entrada: {
+      nG: [5, 25, 20], dG: [1, 4, 4], nH: [0.2], dH: [1, 1],
+      controlador: 'pi',
+      especificacao: { modo: 'acomodacaoPico', acomodacao: 1, criterio: 5, tempoDePico: 0.8 },
+    },
+  },
+);
+
 function passosAplicaveis(projeto) {
   return passos.filter((passo) => !passo.aplicavel || passo.aplicavel(projeto)).length;
 }
@@ -284,6 +312,98 @@ teste('cada lista tem botao de PDF', () => {
   const grupos = document.getElementById('exemplos').children;
   for (const grupo of grupos) {
     assert.equal(grupo.children.filter((item) => item.className.includes('pilula-pdf')).length, 1);
+  }
+});
+
+teste('formulario aceita expressao fatorada e o valor dado', () => {
+  const leitura = interpretarFormulario({
+    nG: '5(s+3)', dG: 's(s+4)', nH: '1', dH: 's+1',
+    controlador: 'compensador-polo', fixo: '10',
+    modo: 'pico', sobressinal: '10', tempoPico: '0,8',
+  });
+  assert.ok(!leitura.erro, leitura.erro);
+  assert.deepEqual(leitura.entrada.dG, [1, 4, 0]);
+  assert.deepEqual(leitura.entrada.dH, [1, 1]);
+  assert.equal(leitura.entrada.fixo, 10);
+  assert.equal(leitura.entrada.especificacao.tempoDePico, 0.8);
+});
+
+teste('formulario recusa expressao invalida', () => {
+  const leitura = interpretarFormulario({ nG: '5(s+3', dG: '1 4 0', controlador: 'pd', modo: 'polos', poloReal: '-2', poloImaginario: '2' });
+  assert.ok(leitura.erro);
+});
+
+teste('o passo 4 cita o zero dado do compensador', () => {
+  const projeto = projetarControlador(CASOS.find((caso) => caso.entrada.controlador === 'compensador-zero').entrada);
+  const html = renderizar(projeto).serializar();
+  assert.ok(html.includes('o zero dado em'));
+  assert.ok(html.includes('Localização do polo do controlador'));
+});
+
+teste('atraso de fase renderiza os cinco passos', () => {
+  const projeto = projetarControlador({
+    nG: [820], dG: [1, 30, 200, 0], nH: [1], dH: [1],
+    controlador: 'atraso',
+    atraso: { zeta: 0.6, constante: 41, zero: 0.1 },
+  });
+  const raiz = renderizar(projeto);
+  const html = raiz.serializar();
+  verificarSaida(html);
+  assert.equal(raiz.children.filter((item) => item.tagName === 'details').length, 5);
+  assert.ok(html.includes('Constante de erro atual'));
+});
+
+teste('atraso-avanco mostra o passo 6b', () => {
+  const projeto = projetarControlador({
+    nG: [4], dG: [1, 0.5, 0], nH: [1], dH: [1],
+    controlador: 'atraso-avanco', fixo: 0.5,
+    especificacao: { modo: 'amortecimento', zeta: 0.5, omegaN: 5 },
+    atraso: { constante: 80, zero: 0.2 },
+    discretizacao: { metodo: 'degrau', periodo: 0.05, alvo: 'malha' },
+  });
+  const html = renderizar(projeto).serializar();
+  verificarSaida(html);
+  assert.ok(html.includes('Passo 6b'));
+  assert.ok(html.includes('invariância ao degrau'));
+});
+
+teste('formulario monta a entrada do atraso', () => {
+  const leitura = interpretarFormulario({
+    nG: '820', dG: 's(s+10)(s+20)', controlador: 'atraso',
+    constante: '41', zeroAtraso: '0,1', zetaAtraso: '0.6', modo: 'qualquer',
+  });
+  assert.ok(!leitura.erro, leitura.erro);
+  assert.equal(leitura.entrada.especificacao, null);
+  assert.deepEqual(leitura.entrada.atraso, { constante: 41, zero: 0.1, zeta: 0.6 });
+});
+
+teste('ZOH de controlador improprio vira aviso no passo 10', () => {
+  const projeto = projetarControlador({
+    nG: [4, 16], dG: [1, 4, 4, 0], nH: [1], dH: [1],
+    controlador: 'pd',
+    especificacao: { modo: 'desempenho', sobressinal: 10, acomodacao: 4, criterio: 5 },
+    discretizacao: { metodo: 'degrau', periodo: 0.1, alvo: 'controlador' },
+  });
+  const html = renderizar(projeto).serializar();
+  assert.ok(html.includes('Não foi possível discretizar'));
+});
+
+const { calcularFerramenta } = await import('../assets/js/interface/avulsas.js');
+
+teste('ferramentas avulsas renderizam', () => {
+  const valores = {
+    'ferramenta-numerador': '1', 'ferramenta-denominador': '(s+1)(s+2)', 'ferramenta-metodo': 'degrau', 'ferramenta-periodo': '0,1',
+    'ferramenta-l': '0.2', 'ferramenta-t': '2', 'ferramenta-kcr': '4', 'ferramenta-pcr': '6.3',
+  };
+  for (const [id, texto] of Object.entries(valores)) {
+    document.getElementById(id).value = texto;
+  }
+  for (const escolhida of ['discretizar', 'zn1', 'zn2']) {
+    const raiz = new NoFalso('div');
+    calcularFerramenta(raiz, escolhida);
+    const html = raiz.serializar();
+    verificarSaida(html);
+    assert.ok(!html.includes('aviso-erro'), `${escolhida} terminou com erro`);
   }
 });
 

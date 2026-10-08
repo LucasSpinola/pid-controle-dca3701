@@ -5,6 +5,7 @@ import {
   numeradorDoControlador,
   denominadorDoControlador,
   excessoDeZeros,
+  zerosFixosComoPontos,
 } from './controladores.js';
 import { montarMalhaAberta } from './malhaAberta.js';
 import { criterioDeAngulo, localizarZero, criterioDeModulo } from './criterios.js';
@@ -19,6 +20,7 @@ import { calcularLugarRaizes } from './lugarRaizes.js';
 import { ganhosDeDescolamento } from './descolamento.js';
 import { pontosNotaveis, raioDeInteresse } from './pontosNotaveis.js';
 import { discretizarProjeto } from './discretizacao.js';
+import { parteEmAtraso, projetarAtraso } from './atraso.js';
 
 function validarProprio(entrada, controlador) {
   const { nG, dG, nH, dH } = entrada;
@@ -40,8 +42,17 @@ function responder(malhaFechada, desempenho) {
   };
 }
 
+function tentarDiscretizar(projeto, pedido) {
+  try {
+    return discretizarProjeto(projeto, pedido);
+  } catch (falha) {
+    return { alvo: pedido.alvo, erro: falha.message };
+  }
+}
+
 function varrer(projeto) {
-  const { controlador, zero, malhaAberta, modulo } = projeto;
+  const { zero, malhaAberta, modulo } = projeto;
+  const controlador = projeto.controladorFinal;
   const numeradorBruto = P.multiplicar(numeradorDoControlador(controlador, zero.valor), malhaAberta.numerador);
   const denominadorBruto = P.multiplicar(
     denominadorDoControlador(controlador, zero.valor),
@@ -50,19 +61,23 @@ function varrer(projeto) {
   const tamanho = Math.max(numeradorBruto.length, denominadorBruto.length);
 
   return calcularLugarRaizes(P.preencher(numeradorBruto, tamanho), P.preencher(denominadorBruto, tamanho), {
-    zeros: [...malhaAberta.zeros, ...new Array(controlador.zeros).fill(zero.ponto)],
+    zeros: [
+      ...malhaAberta.zeros,
+      ...new Array(controlador.zeros).fill(zero.ponto),
+      ...zerosFixosComoPontos(controlador),
+    ],
     ganhosNotaveis: [modulo.kc, ...ganhosDeDescolamento(numeradorBruto, denominadorBruto)],
     raioDeInteresse: raioDeInteresse(pontosNotaveis(projeto, { malhaFechada: true })),
   });
 }
 
-export function esbocarProjeto(nG, dG, nH, dH, especificacao, idDoControlador) {
+export function esbocarProjeto(nG, dG, nH, dH, especificacao, idDoControlador, fixo = null) {
   const malhaAberta = montarMalhaAberta(nG, dG, nH, dH);
   const desempenho = especificacao ? interpretarEspecificacao(especificacao) : null;
-  const controlador = idDoControlador ? obterControlador(idDoControlador) : null;
+  const controlador = idDoControlador ? obterControlador(idDoControlador, fixo) : null;
   const esboco = { malhaAberta, desempenho, controlador, zero: null };
 
-  if (controlador && desempenho) {
+  if (controlador && desempenho && !controlador.pipeline) {
     const angulo = criterioDeAngulo(desempenho.polo, malhaAberta, controlador);
     if (angulo.viavel) {
       esboco.zero = localizarZero(desempenho.polo, angulo);
@@ -72,7 +87,13 @@ export function esbocarProjeto(nG, dG, nH, dH, especificacao, idDoControlador) {
 }
 
 export function projetarControlador(entrada) {
-  const controlador = obterControlador(entrada.controlador);
+  const controlador = obterControlador(entrada.controlador, entrada.fixo);
+  if (controlador.pipeline === 'atraso') {
+    return projetarAtraso(entrada);
+  }
+  if (controlador.fixo && controlador.zerosFixos.length + controlador.polosFixos.length === 0) {
+    throw new Error(`informe o ${controlador.fixo} dado do compensador.`);
+  }
   validarProprio(entrada, controlador);
 
   const { nG, dG, nH, dH } = entrada;
@@ -88,16 +109,34 @@ export function projetarControlador(entrada) {
   const zero = localizarZero(desempenho.polo, angulo);
   const modulo = criterioDeModulo(desempenho.polo, malhaAberta, controlador, zero);
   const ganhos = controlador.ganhos(modulo.kc, zero.valor);
-  const malhaFechada = analisarMalhaFechada(entrada, controlador, zero, modulo.kc, desempenho.polo);
+
+  let controladorFinal = controlador;
+  let atraso = null;
+  if (controlador.atraso) {
+    const numeradorBase = P.escalar(
+      P.multiplicar(numeradorDoControlador(controlador, zero.valor), malhaAberta.numerador),
+      modulo.kc,
+    );
+    const denominadorBase = P.multiplicar(denominadorDoControlador(controlador, zero.valor), malhaAberta.denominador);
+    atraso = parteEmAtraso(numeradorBase, denominadorBase, entrada.atraso.constante, entrada.atraso.zero, desempenho.polo);
+    controladorFinal = {
+      ...controlador,
+      zerosFixos: [...controlador.zerosFixos, atraso.zero],
+      polosFixos: [...controlador.polosFixos, atraso.polo],
+    };
+  }
+  const malhaFechada = analisarMalhaFechada(entrada, controladorFinal, zero, modulo.kc, desempenho.polo);
 
   const projeto = {
     ...base,
+    controladorFinal,
+    atraso,
     zero,
     modulo,
     ganhos,
     malhaFechada,
     resposta: malhaFechada.estavel ? responder(malhaFechada, desempenho) : null,
-    discretizacao: entrada.discretizacao ? discretizarProjeto(malhaFechada, entrada.discretizacao) : null,
+    discretizacao: entrada.discretizacao ? tentarDiscretizar({ malhaFechada, entrada }, entrada.discretizacao) : null,
   };
   projeto.varredura = varrer(projeto);
   return projeto;

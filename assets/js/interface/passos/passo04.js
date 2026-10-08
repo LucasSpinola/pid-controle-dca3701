@@ -1,15 +1,16 @@
 import { formula, paragrafo, separador, aviso, quadroDeGrafico } from '../componentes.js';
 import { complexoLatex, rotularContribuicoes } from '../../formatacao/latex.js';
-import { fixoLatex } from '../../formatacao/numero.js';
+import { fixoLatex, numeroLatex } from '../../formatacao/numero.js';
 import { criarPlano } from '../../grafico/fabrica.js';
 import {
   CORES,
   desenharPolosZeros,
   desenharPolosDesejados,
-  desenharPoloDoControlador,
+  desenharFixosDoControlador,
   desenharVetores,
 } from '../../grafico/camadas.js';
 import { pontosNotaveis } from '../../projeto/pontosNotaveis.js';
+import { zerosFixosComoPontos, polosFixosComoPontos } from '../../projeto/controladores.js';
 
 export const titulo = '**Passo 4:** Critério de ângulo em $s_d$';
 
@@ -66,9 +67,14 @@ export function renderizar(destino, projeto) {
     destino,
     '\\angle G_c(s_d)G(s_d)H(s_d) = \\sum \\angle(s_d - z_j) - \\sum \\angle(s_d - p_i) = 180^\\circ \\pm q\\,360^\\circ',
   );
+  const conhecidos = [
+    ...(controlador.polosNaOrigem > 0 ? ['o polo do controlador na origem ($p_c$)'] : []),
+    ...(controlador.polosFixos || []).map((valor) => `o polo dado em $s = ${numeroLatex(-valor)}$ ($p_c$)`),
+    ...(controlador.zerosFixos || []).map((valor) => `o zero dado em $s = ${numeroLatex(-valor)}$ ($z_c$)`),
+  ];
   paragrafo(
     destino,
-    `Primeiro soma-se tudo o que já é conhecido${controlador.polosNaOrigem > 0 ? ', incluindo o polo do controlador na origem ($p_c$)' : ''}. `
+    `Primeiro soma-se tudo o que já é conhecido${conhecidos.length > 0 ? `, incluindo ${conhecidos.join(' e ')}` : ''}. `
     + `O ${singularidade} do controlador fica para depois.`,
   );
 
@@ -78,7 +84,7 @@ export function renderizar(destino, projeto) {
   formula(destino, `\\sum \\angle(s_d - p_i) = ${fixoLatex(angulo.somaPolos, 2)}^\\circ`);
 
   if (zeros.length > 0) {
-    paragrafo(destino, '**Ângulos dos zeros da planta:**');
+    paragrafo(destino, (controlador.zerosFixos || []).length > 0 ? '**Ângulos dos zeros:**' : '**Ângulos dos zeros da planta:**');
     listarAngulos(destino, zeros, 'z', polo);
     formula(destino, `\\sum \\angle(s_d - z_j) = ${fixoLatex(angulo.somaZeros, 2)}^\\circ`);
   } else {
@@ -126,13 +132,10 @@ export function renderizar(destino, projeto) {
     pontosNotaveis(projeto, { zeroDoControlador: false }),
     'Contribuições angulares em sd',
   );
-  const origens = [...malhaAberta.polos, ...(controlador.polosNaOrigem > 0 ? [{ re: 0, im: 0 }] : [])];
-  desenharVetores(plano, origens, polo, CORES.polo);
-  desenharVetores(plano, malhaAberta.zeros, polo, CORES.zero);
+  desenharVetores(plano, [...malhaAberta.polos, ...polosFixosComoPontos(controlador)], polo, CORES.polo);
+  desenharVetores(plano, [...malhaAberta.zeros, ...zerosFixosComoPontos(controlador)], polo, CORES.zero);
   desenharPolosZeros(plano, malhaAberta.polos, malhaAberta.zeros);
-  if (controlador.polosNaOrigem > 0) {
-    desenharPoloDoControlador(plano);
-  }
+  desenharFixosDoControlador(plano, controlador);
   desenharPolosDesejados(plano, polo);
   quadroDeGrafico(destino, plano.elemento());
 }
