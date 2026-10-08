@@ -4,6 +4,7 @@ import { numeroLatex } from '../../formatacao/numero.js';
 import { formaFatoradaLatex, controladorLatex } from '../../formatacao/controlador.js';
 
 export const titulo = '**Passo 3:** Malha aberta com o controlador';
+export const abertoPorPadrao = true;
 
 function listarRaizes(destino, rotulo, simbolo, lista, vazio) {
   paragrafo(destino, `**${rotulo}** ($${simbolo === 'p' ? 'n_p' : 'n_z'} = ${lista.length}$)`);

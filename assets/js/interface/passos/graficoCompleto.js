@@ -1,4 +1,4 @@
-import { elemento, paragrafo, quadroDeGrafico } from '../componentes.js';
+import { elemento, paragrafo, quadroDeGrafico, secao } from '../componentes.js';
 import { montarBotaoDeDownload } from '../ferramentas.js';
 import { formatarG } from '../../formatacao/numero.js';
 import { criarPlano } from '../../grafico/fabrica.js';
@@ -12,13 +12,14 @@ import {
 } from '../../grafico/camadas.js';
 import { pontosNotaveis } from '../../projeto/pontosNotaveis.js';
 
-export function renderizar(pai, projeto) {
+export const titulo = '**LGR do sistema compensado** (verificação)';
+
+export function renderizar(pai, projeto, aberto = false) {
   const { varredura, malhaAberta, zero, desempenho, malhaFechada, modulo } = projeto;
   const controlador = projeto.controladorFinal || projeto.controlador;
-  const bloco = elemento('section', 'grafico-final');
-  const cabecalho = elemento('div', 'grafico-final-cabecalho');
-  cabecalho.appendChild(elemento('h2', 'titulo-secao', 'LGR do sistema compensado'));
-  bloco.appendChild(cabecalho);
+  const corpo = secao(pai, titulo, aberto);
+  const acoes = elemento('div', 'grafico-final-cabecalho');
+  corpo.appendChild(acoes);
 
   const plano = criarPlano(
     pontosNotaveis({ ...projeto, controlador }, { malhaFechada: true }),
@@ -32,14 +33,12 @@ export function renderizar(pai, projeto) {
   desenharPolosDeMalhaFechada(plano, malhaFechada.polos.map((item) => item.ponto));
 
   const svg = plano.elemento();
-  quadroDeGrafico(bloco, svg);
-  montarBotaoDeDownload(cabecalho, svg, `lgr-compensado-${controlador.id}.svg`);
+  quadroDeGrafico(corpo, svg);
+  montarBotaoDeDownload(acoes, svg, `lgr-compensado-${controlador.id}.svg`);
 
   paragrafo(
-    bloco,
+    corpo,
     `Varredura de $${controlador.simboloGanho}$ de $0$ até $${formatarG(varredura.ganhoMaximo, 4)}$. Os quadrados marcam os polos `
     + `de malha fechada em $${controlador.simboloGanho} = ${formatarG(modulo.kc, 6)}$, e o par desejado cai sobre os ramos.`,
   );
-
-  pai.appendChild(bloco);
 }

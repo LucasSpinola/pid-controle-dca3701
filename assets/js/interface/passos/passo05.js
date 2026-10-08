@@ -11,6 +11,7 @@ import {
 import { pontosNotaveis } from '../../projeto/pontosNotaveis.js';
 
 export const titulo = '**Passo 5:** Localização do zero do controlador';
+export const abertoPorPadrao = true;
 export const requerViabilidade = true;
 
 export function tituloPara(projeto) {

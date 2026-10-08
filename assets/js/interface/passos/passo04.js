@@ -13,6 +13,7 @@ import { pontosNotaveis } from '../../projeto/pontosNotaveis.js';
 import { zerosFixosComoPontos, polosFixosComoPontos } from '../../projeto/controladores.js';
 
 export const titulo = '**Passo 4:** Critério de ângulo em $s_d$';
+export const abertoPorPadrao = true;
 
 function listarAngulos(destino, itens, simbolo, polo) {
   for (const item of itens) {

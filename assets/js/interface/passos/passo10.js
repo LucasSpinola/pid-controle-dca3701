@@ -5,6 +5,7 @@ import { ALVOS } from '../../projeto/discretizacao.js';
 import * as P from '../../nucleo/polinomio.js';
 
 export const titulo = '**Passo 10:** Discretização';
+export const abertoPorPadrao = true;
 export const requerViabilidade = true;
 
 const FOLGA_DO_CIRCULO = 1e-6;

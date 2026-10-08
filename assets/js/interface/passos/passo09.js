@@ -9,9 +9,8 @@ import {
   desenharInstante,
 } from '../../grafico/camadas.js';
 
-export const titulo = '**Passo 9:** Resposta ao degrau unitário';
+export const titulo = '**Passo 9:** Resposta ao degrau unitário (verificação)';
 export const requerViabilidade = true;
-export const abertoPorPadrao = true;
 
 const FOLGA_DE_COMPARACAO = 1e-3;
 

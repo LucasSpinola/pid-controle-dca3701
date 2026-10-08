@@ -104,6 +104,6 @@ export function renderizarResultado(destino, projeto, opcoes = {}) {
     passo.renderizar(corpo, projeto);
   }
   if (projeto.viavel) {
-    graficoCompleto.renderizar(destino, projeto);
+    graficoCompleto.renderizar(destino, projeto, aberto);
   }
 }

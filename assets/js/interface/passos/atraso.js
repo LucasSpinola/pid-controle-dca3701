@@ -81,7 +81,7 @@ function listarPolos(destino, rotulo, polos) {
 }
 
 const passo4 = {
-  titulo: '**Passo 4:** Malha fechada com e sem o atraso',
+  titulo: '**Passo 4:** Malha fechada com e sem o atraso (verificação)',
   renderizar(destino, projeto) {
     const { original, compensada, dominante, novoDominante, entrada } = projeto;
     listarPolos(destino, '**Sem o atraso:**', original.polos);
@@ -108,8 +108,7 @@ const passo4 = {
 };
 
 const passo5 = {
-  titulo: '**Passo 5:** Resposta ao degrau',
-  abertoPorPadrao: true,
+  titulo: '**Passo 5:** Resposta ao degrau (verificação)',
   renderizar(destino, projeto) {
     const { original, compensada } = projeto;
     if (!original.resposta || !compensada.resposta) {

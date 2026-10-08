@@ -2,6 +2,7 @@ import { formula, paragrafo, separador, aviso } from '../componentes.js';
 import { fixoLatex, numeroLatex } from '../../formatacao/numero.js';
 
 export const titulo = '**Passo 6b:** Parte em atraso de fase';
+export const abertoPorPadrao = true;
 export const requerViabilidade = true;
 
 const LIMITE_DE_ANGULO = -5;

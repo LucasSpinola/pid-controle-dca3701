@@ -3,6 +3,7 @@ import { complexoLatex, rotularContribuicoes } from '../../formatacao/latex.js';
 import { fixoLatex, numeroLatex } from '../../formatacao/numero.js';
 
 export const titulo = '**Passo 6:** Critério de módulo e $K_c$';
+export const abertoPorPadrao = true;
 export const requerViabilidade = true;
 
 export function tituloPara(projeto) {

@@ -11,7 +11,7 @@ import {
 import { RAZAO_DE_DOMINANCIA } from '../../projeto/malhaFechada.js';
 import { constantesDeErro } from '../../projeto/erroEstatico.js';
 
-export const titulo = '**Passo 8:** Malha fechada e dominância';
+export const titulo = '**Passo 8:** Malha fechada, dominância e erro (verificação)';
 export const requerViabilidade = true;
 
 function descreverPolo(item) {

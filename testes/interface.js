@@ -240,7 +240,7 @@ for (const caso of CASOS) {
     const raiz = renderizar(projeto);
     verificarSaida(raiz.serializar());
     if (projeto.viavel) {
-      assert.equal(raiz.children.filter((item) => item.tagName === 'details').length, passosAplicaveis(projeto));
+      assert.equal(raiz.children.filter((item) => item.tagName === 'details').length, passosAplicaveis(projeto) + 1);
     }
   });
 }
@@ -405,6 +405,15 @@ teste('ferramentas avulsas renderizam', () => {
     verificarSaida(html);
     assert.ok(!html.includes('aviso-erro'), `${escolhida} terminou com erro`);
   }
+});
+
+teste('passos da prova abrem e a verificacao fica recolhida', () => {
+  const projeto = projetarControlador(CASOS[0].entrada);
+  const blocos = renderizar(projeto).children.filter((item) => item.tagName === 'details');
+  const abertos = blocos.map((bloco) => bloco.open);
+  assert.deepEqual(abertos, [true, true, true, true, true, true, true, false, false, false]);
+  const titulos = blocos.map((bloco) => bloco.children[0].serializar());
+  assert.ok(titulos.slice(7).every((titulo) => titulo.includes('verificação')));
 });
 
 console.log(`\n${executados - falhas}/${executados} testes de interface passaram`);
