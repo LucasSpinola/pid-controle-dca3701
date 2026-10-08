@@ -1,7 +1,7 @@
 import { formula, paragrafo, separador, aviso, colunas } from '../componentes.js';
 import { razaoLatex, complexoLatex } from '../../formatacao/latex.js';
 import { numeroLatex } from '../../formatacao/numero.js';
-import { formaParalelaLatex, formaFatoradaLatex } from '../../formatacao/controlador.js';
+import { formaFatoradaLatex, controladorLatex } from '../../formatacao/controlador.js';
 
 export const titulo = '**Passo 3:** Malha aberta com o controlador';
 
@@ -38,8 +38,8 @@ export function renderizar(destino, projeto) {
   }
 
   separador(destino);
-  paragrafo(destino, `**Controlador ${controlador.nome}:**`);
-  formula(destino, `G_c(s) = ${formaParalelaLatex(controlador)} = ${formaFatoradaLatex(controlador)}`);
+  paragrafo(destino, controlador.polosLivres > 0 ? '**Controlador:**' : `**Controlador ${controlador.nome}:**`);
+  formula(destino, controladorLatex(controlador));
   if (controlador.zeros > 1) {
     paragrafo(destino, 'Os dois zeros são reais e iguais, então um único valor $z$ descreve os dois.');
   }
@@ -49,9 +49,10 @@ export function renderizar(destino, projeto) {
     destino,
     `G_c(s)G(s)H(s) = ${formaFatoradaLatex(controlador)} \\cdot ${razaoLatex(malhaAberta.numerador, malhaAberta.denominador)}`,
   );
+  const livre = controlador.polosLivres > 0 ? 'a posição do polo' : 'a posição do zero';
   paragrafo(
     destino,
-    'Restam duas incógnitas: $z$, que sai do critério de ângulo, e $K_c$, que sai do critério de módulo, '
-    + 'ambos aplicados em $s = s_d$.',
+    `Restam duas incógnitas: $${controlador.simboloLivre}$, ${livre}, que sai do critério de ângulo, e `
+    + `$${controlador.simboloGanho}$, que sai do critério de módulo, ambos aplicados em $s = s_d$.`,
   );
 }

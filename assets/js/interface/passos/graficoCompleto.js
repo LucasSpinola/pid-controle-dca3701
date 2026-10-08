@@ -36,8 +36,8 @@ export function renderizar(pai, projeto) {
 
   paragrafo(
     bloco,
-    `Varredura de $K_c$ de $0$ até $${formatarG(varredura.ganhoMaximo, 4)}$. Os quadrados marcam os polos `
-    + `de malha fechada em $K_c = ${formatarG(modulo.kc, 6)}$, e o par desejado cai sobre os ramos.`,
+    `Varredura de $${controlador.simboloGanho}$ de $0$ até $${formatarG(varredura.ganhoMaximo, 4)}$. Os quadrados marcam os polos `
+    + `de malha fechada em $${controlador.simboloGanho} = ${formatarG(modulo.kc, 6)}$, e o par desejado cai sobre os ramos.`,
   );
 
   pai.appendChild(bloco);

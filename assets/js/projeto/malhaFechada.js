@@ -26,7 +26,7 @@ function classificar(polo, desejado, zeros, escala) {
 export function analisarMalhaFechada(entrada, controlador, zero, kc, desejado) {
   const { nG, dG, nH, dH } = entrada;
   const numeradorControlador = P.escalar(numeradorDoControlador(controlador, zero.valor), kc);
-  const denominadorControlador = denominadorDoControlador(controlador);
+  const denominadorControlador = denominadorDoControlador(controlador, zero.valor);
 
   const numeradorDireto = P.multiplicar(numeradorControlador, nG);
   const numeradorAberto = P.multiplicar(numeradorDireto, nH);

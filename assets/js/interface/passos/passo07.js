@@ -22,8 +22,26 @@ function formaParalelaNumerica(controlador, ganhos) {
   return termos.join(' + ');
 }
 
+function renderizarPolo(destino, projeto) {
+  const { controlador, zero, modulo } = projeto;
+  paragrafo(destino, 'Os parâmetros saem direto dos dois critérios:');
+  formula(
+    destino,
+    `a = ${numeroLatex(modulo.kc)} \\quad (\\text{critério de módulo}), \\qquad b = ${numeroLatex(zero.valor)} \\quad (\\text{critério de ângulo})`,
+  );
+
+  separador(destino);
+  paragrafo(destino, '**Controlador projetado:**');
+  formula(destino, `G_c(s) = ${formaFatoradaLatex(controlador, zero.valor, numeroLatex(modulo.kc))}`);
+  aviso(destino, 'sucesso', `**Controlador:** $a = ${numeroLatex(modulo.kc)}$, $b = ${numeroLatex(zero.valor)}$`);
+}
+
 export function renderizar(destino, projeto) {
   const { controlador, zero, modulo, ganhos, malhaFechada } = projeto;
+  if (controlador.polosLivres > 0) {
+    renderizarPolo(destino, projeto);
+    return;
+  }
 
   paragrafo(destino, 'Expandindo a forma fatorada e comparando com a forma paralela:');
   formula(destino, `G_c(s) = ${formaFatoradaLatex(controlador)} = ${formaParalelaLatex(controlador)}`);

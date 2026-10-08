@@ -16,24 +16,27 @@ DCA-3701 Projeto de Sistemas de Controle · 2ª unidade · DCA · UFRN
 ---
 
 Informe $G(s)$, $H(s)$, o tipo de controlador e a especificação de malha fechada. A página encontra
-os polos dominantes desejados, aplica o critério de ângulo para posicionar o zero do controlador e o
-critério de módulo para achar o ganho, devolve $K_p$, $K_i$ e $K_d$ e confere o projeto na resposta
-ao degrau simulada.
+os polos dominantes desejados, aplica o critério de ângulo para posicionar o zero (ou o polo) do
+controlador e o critério de módulo para achar o ganho, devolve os parâmetros do controlador, confere o
+projeto na resposta ao degrau simulada e, se pedido, discretiza o resultado.
 
-**[Os nove passos](#os-nove-passos)** · **[Rodar local](#rodar-local)** · **[Estrutura](#estrutura)** · **[Testes](#testes)**
+**[Os passos](#os-passos)** · **[Rodar local](#rodar-local)** · **[Estrutura](#estrutura)** · **[Testes](#testes)**
 
 ## Destaques
 
 | | |
 |---|---|
 | **PD, PI e PID** | o PID usa zeros reais e iguais, $G_c(s) = K_c (s+z)^2 / s$ |
+| **Controlador $a/(s+b)$** | polo e ganho livres: o ângulo dá $b$ e o módulo dá $a$ |
+| **Discretização** | Tustin, Euler para frente ou para trás, do controlador ou de $G_c G H$, com equação de diferenças |
 | **Três formas de especificar** | $M_P$ e $t_s$ (2% ou 5%), $\zeta$ e $\omega_n$, ou os próprios polos desejados |
 | **A conta, não só o resultado** | fórmula, substituição e resultado de cada passo, em LaTeX |
 | **Projeto conferido** | polos de malha fechada, dominância e resposta ao degrau exata em espaço de estados |
-| **Questões da lista** | cada questão do exercício preenche o formulário com um clique |
+| **Questões da lista** | cada questão do 1º e do 2º exercício preenche o formulário com um clique |
+| **PDF** | **Baixar PDF** imprime o projeto aberto com o enunciado; **PDF da lista** resolve a lista inteira |
 | **Link que reabre o projeto** | os campos vão para a barra de endereços |
 
-## Os nove passos
+## Os passos
 
 | | Passo | O que aparece |
 |---|---|---|
@@ -41,11 +44,12 @@ ao degrau simulada.
 | 2 | Polos desejados | $s_d = -\sigma \pm j\omega_d$ sobre a reta de amortecimento |
 | 3 | Malha aberta | $G(s)H(s)$, polos, zeros, cancelamentos e a forma de $G_c(s)$ |
 | 4 | Critério de ângulo | contribuição de cada polo e zero em $s_d$ e a deficiência angular $\phi_c$ |
-| 5 | Zero do controlador | $z = \sigma + \omega_d / \tan\phi_z$ |
-| 6 | Critério de módulo | produto das distâncias e o ganho $K_c$ |
+| 5 | Zero ou polo do controlador | $z = \sigma + \omega_d / \tan\phi_z$ (ou $b$, para $a/(s+b)$) |
+| 6 | Critério de módulo | produto das distâncias e o ganho $K_c$ (ou $a$) |
 | 7 | Ganhos | $K_p$, $K_i$ e $K_d$ e o controlador nas formas fatorada e paralela |
 | 8 | Malha fechada | $T(s)$, polos de malha fechada e a verificação de dominância |
 | 9 | Resposta ao degrau | $M_P$, $t_p$ e $t_s$ simulados contra a referência de segunda ordem |
+| 10 | Discretização | substituição de $s$, $G(z)$ em $z$ e $z^{-1}$, equação de diferenças e polos discretos (só quando pedida) |
 
 Depois dos passos vem o LGR do sistema compensado, com os polos de malha fechada no ganho projetado.
 Quando o critério de ângulo não tem solução para o controlador escolhido, o roteiro para no passo 4 e
@@ -67,6 +71,10 @@ Depois abra <http://localhost:8000>.
 **Como usar:** coeficientes em ordem decrescente de $s$, separados por espaço — `1 4 4 0` é
 $s^3 + 4s^2 + 4s$. Escolha o controlador, a forma da especificação e clique em
 **Projetar controlador**.
+
+**PDF:** o botão **Baixar PDF**, acima do resultado, e o **PDF da lista**, ao lado das questões, abrem a
+impressão do navegador. Escolha **Salvar como PDF** no destino. Todos os passos saem abertos, com os
+gráficos em vetor.
 
 ## Estrutura
 
@@ -96,9 +104,10 @@ em `interface/exercicios.js`.
 npm run teste
 ```
 
-`executar.js` cobre especificações, critérios de ângulo e de módulo, a simulação do degrau e as quatro
-questões do 1º exercício. `raizes.js` planta raízes de grau 2 a 8 e confere se o solver as reencontra.
-`interface.js` renderiza os passos sobre um DOM falso, caçando exceção, `undefined` e `NaN`.
+`executar.js` cobre especificações, critérios de ângulo e de módulo, a simulação do degrau, a
+discretização e as questões do 1º e do 2º exercício. `raizes.js` planta raízes de grau 2 a 8 e confere
+se o solver as reencontra. `interface.js` renderiza os passos e as questões das listas sobre um DOM
+falso, caçando exceção, `undefined` e `NaN`.
 
 ## Publicação
 

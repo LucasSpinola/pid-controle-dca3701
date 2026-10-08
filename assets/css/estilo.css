@@ -282,6 +282,12 @@ body {
   color: var(--destaque);
 }
 
+.pilula-pdf {
+  border-style: dashed;
+  background: var(--superficie);
+  color: var(--destaque-escuro);
+}
+
 .pilula-ativa,
 .pilula-ativa:hover {
   background: var(--destaque-claro);
@@ -681,7 +687,52 @@ body {
 .barra-resultado {
   display: flex;
   justify-content: flex-end;
+  gap: 8px;
   margin-bottom: 12px;
+}
+
+.botao-pdf {
+  border-color: var(--destaque);
+  color: var(--destaque-escuro);
+}
+
+.enunciado {
+  background: var(--superficie);
+  border: 1px solid var(--borda);
+  border-left: 4px solid var(--destaque);
+  border-radius: 12px;
+  padding: 16px 22px 10px;
+  margin-bottom: 16px;
+  box-shadow: var(--sombra-leve);
+}
+
+.enunciado-etiqueta {
+  margin: 0 0 8px;
+  font-size: 12px;
+  font-weight: 650;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--destaque-escuro);
+}
+
+.enunciado .texto {
+  margin: 0 0 8px;
+}
+
+.enunciado-dados {
+  margin-top: 10px;
+  padding-top: 4px;
+  border-top: 1px solid var(--borda-suave);
+  overflow-x: auto;
+}
+
+.enunciado-dados .formula {
+  margin: 8px 0;
+}
+
+.cabecalho-impressao,
+.impressao {
+  display: none;
 }
 
 .botao-secundario {
@@ -706,6 +757,38 @@ body {
   body {
     background: #ffffff;
     font-size: 11pt;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .cabecalho-impressao {
+    display: flex;
+    justify-content: space-between;
+    gap: 12pt;
+    padding: 6pt 0 8pt;
+    border-bottom: 1px solid #cccccc;
+    font-size: 9.5pt;
+    color: #46535f;
+  }
+
+  body.imprimindo-lista #resultado {
+    display: none;
+  }
+
+  body.imprimindo-lista .impressao {
+    display: block;
+    margin-top: 0;
+  }
+
+  .relatorio-questao + .relatorio-questao {
+    break-before: page;
+    page-break-before: always;
+  }
+
+  .enunciado {
+    box-shadow: none;
+    break-inside: avoid;
+    page-break-inside: avoid;
   }
 
   @page {
@@ -741,8 +824,16 @@ body {
   .grafico-final {
     border: 1px solid #d5d5d5;
     box-shadow: none;
+  }
+
+  .grafico-final {
     break-inside: avoid;
     page-break-inside: avoid;
+  }
+
+  .passo-titulo {
+    break-after: avoid;
+    page-break-after: avoid;
   }
 
   .passo-titulo::before {

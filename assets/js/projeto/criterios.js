@@ -1,4 +1,5 @@
 import * as C from '../nucleo/complexo.js';
+import { livreEhPolo, quantidadeLivre } from './controladores.js';
 
 const FOLGA_ANGULAR = 1e-6;
 
@@ -16,19 +17,20 @@ function contribuicaoDeModulo(ponto, referencia, origem) {
   return { referencia, origem, diferenca, valor: C.modulo(diferenca) };
 }
 
-function polosDoConjunto(malhaAberta, controlador) {
+function polosDoConjunto(malhaAberta, controlador, livre = null) {
   const origem = new Array(controlador.polosNaOrigem).fill(null).map(() => C.complexo(0));
+  const livres = livre ? new Array(controlador.polosLivres).fill(livre) : [];
   return [
     ...malhaAberta.polos.map((p) => ({ ponto: p, origem: 'planta' })),
-    ...origem.map((p) => ({ ponto: p, origem: 'controlador' })),
+    ...[...origem, ...livres].map((p) => ({ ponto: p, origem: 'controlador' })),
   ];
 }
 
-function motivoDeInviabilidade(porZero) {
-  if (porZero < FOLGA_ANGULAR || 360 - porZero < FOLGA_ANGULAR) {
+function motivoDeInviabilidade(porSingularidade) {
+  if (porSingularidade < FOLGA_ANGULAR || 360 - porSingularidade < FOLGA_ANGULAR) {
     return 'semDeficiencia';
   }
-  if (porZero >= 180 - FOLGA_ANGULAR) {
+  if (porSingularidade >= 180 - FOLGA_ANGULAR) {
     return 'excesso';
   }
   return null;
@@ -44,8 +46,9 @@ export function criterioDeAngulo(polo, malhaAberta, controlador) {
   const anguloDoGanho = malhaAberta.ganho < 0 ? 180 : 0;
   const fase = somaZeros - somaPolos + anguloDoGanho;
   const deficiencia = paraCircunferencia(-180 - fase);
-  const porZero = deficiencia / controlador.zeros;
-  const motivo = motivoDeInviabilidade(porZero);
+  const exigido = livreEhPolo(controlador) ? paraCircunferencia(-deficiencia) : deficiencia;
+  const porSingularidade = exigido / quantidadeLivre(controlador);
+  const motivo = motivoDeInviabilidade(porSingularidade);
 
   return {
     contribuicaoZeros,
@@ -55,7 +58,8 @@ export function criterioDeAngulo(polo, malhaAberta, controlador) {
     anguloDoGanho,
     fase,
     deficiencia,
-    porZero,
+    exigido,
+    porSingularidade,
     viavel: motivo === null,
     motivo,
   };
@@ -63,7 +67,7 @@ export function criterioDeAngulo(polo, malhaAberta, controlador) {
 
 export function localizarZero(polo, angulo) {
   const sigma = -polo.re;
-  const tangente = Math.tan((angulo.porZero * Math.PI) / 180);
+  const tangente = Math.tan((angulo.porSingularidade * Math.PI) / 180);
   const afastamento = polo.im / tangente;
   const valor = sigma + afastamento;
   return {
@@ -83,7 +87,7 @@ export function criterioDeModulo(polo, malhaAberta, controlador, zero) {
     ...malhaAberta.zeros.map((z) => contribuicaoDeModulo(polo, z, 'planta')),
     ...zerosDoControlador.map((z) => contribuicaoDeModulo(polo, z, 'controlador')),
   ];
-  const distanciasPolos = polosDoConjunto(malhaAberta, controlador)
+  const distanciasPolos = polosDoConjunto(malhaAberta, controlador, zero.ponto)
     .map((item) => contribuicaoDeModulo(polo, item.ponto, item.origem));
 
   const produtoZeros = distanciasZeros.reduce((total, item) => total * item.valor, 1);

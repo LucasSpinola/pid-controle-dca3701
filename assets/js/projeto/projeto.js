@@ -18,6 +18,7 @@ import {
 import { calcularLugarRaizes } from './lugarRaizes.js';
 import { ganhosDeDescolamento } from './descolamento.js';
 import { pontosNotaveis, raioDeInteresse } from './pontosNotaveis.js';
+import { discretizarProjeto } from './discretizacao.js';
 
 function validarProprio(entrada, controlador) {
   const { nG, dG, nH, dH } = entrada;
@@ -42,7 +43,10 @@ function responder(malhaFechada, desempenho) {
 function varrer(projeto) {
   const { controlador, zero, malhaAberta, modulo } = projeto;
   const numeradorBruto = P.multiplicar(numeradorDoControlador(controlador, zero.valor), malhaAberta.numerador);
-  const denominadorBruto = P.multiplicar(denominadorDoControlador(controlador), malhaAberta.denominador);
+  const denominadorBruto = P.multiplicar(
+    denominadorDoControlador(controlador, zero.valor),
+    malhaAberta.denominador,
+  );
   const tamanho = Math.max(numeradorBruto.length, denominadorBruto.length);
 
   return calcularLugarRaizes(P.preencher(numeradorBruto, tamanho), P.preencher(denominadorBruto, tamanho), {
@@ -93,6 +97,7 @@ export function projetarControlador(entrada) {
     ganhos,
     malhaFechada,
     resposta: malhaFechada.estavel ? responder(malhaFechada, desempenho) : null,
+    discretizacao: entrada.discretizacao ? discretizarProjeto(malhaFechada, entrada.discretizacao) : null,
   };
   projeto.varredura = varrer(projeto);
   return projeto;

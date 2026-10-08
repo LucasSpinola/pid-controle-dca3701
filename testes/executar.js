@@ -13,6 +13,9 @@ import { simularDegrau, medirResposta } from '../assets/js/projeto/respostaDegra
 import { projetarControlador } from '../assets/js/projeto/projeto.js';
 import { extrairRamo } from '../assets/js/projeto/lugarRaizes.js';
 import { ganhosDeDescolamento } from '../assets/js/projeto/descolamento.js';
+import { discretizar } from '../assets/js/projeto/discretizacao.js';
+import * as P from '../assets/js/nucleo/polinomio.js';
+import * as C from '../assets/js/nucleo/complexo.js';
 
 let executados = 0;
 let falhas = 0;
@@ -199,6 +202,72 @@ teste('a varredura passa pelos polos desejados em K = Kc', () => {
     Infinity,
   );
   assert.ok(folga < 1e-6, `ramo passou a ${folga} de s_d`);
+});
+
+teste('Euler para frente em 1/(s+1) com T = 0.5', () => {
+  const d = discretizar([1], [1, 1], 'euler', 0.5);
+  perto(d.numeradorZ[0], 0.5, 1e-12);
+  perto(d.denominadorZ[0], 1, 1e-12);
+  perto(d.denominadorZ[1], -0.5, 1e-12);
+});
+
+teste('discretizacao bate com a substituicao de s em z', () => {
+  const numerador = [0.539, 1.436, 0.957];
+  const denominador = [1, 0];
+  const z = C.complexo(0.3, 0.7);
+  const substituicoes = {
+    euler: (T) => C.dividir(C.subtrair(z, C.complexo(1)), C.complexo(T)),
+    'euler-atraso': (T) => C.dividir(C.subtrair(z, C.complexo(1)), C.escalar(z, T)),
+    tustin: (T) => C.escalar(C.dividir(C.subtrair(z, C.complexo(1)), C.somar(z, C.complexo(1))), 2 / T),
+  };
+  for (const [metodo, substituir] of Object.entries(substituicoes)) {
+    const s = substituir(2);
+    const esperado = C.dividir(P.avaliarComplexo(numerador, s), P.avaliarComplexo(denominador, s));
+    const d = discretizar(numerador, denominador, metodo, 2);
+    const obtido = C.dividir(P.avaliarComplexo(d.numeradorZ, z), P.avaliarComplexo(d.denominadorZ, z));
+    perto(obtido.re, esperado.re, 1e-9);
+    perto(obtido.im, esperado.im, 1e-9);
+  }
+});
+
+teste('2o exercicio, questao 1: PID com Tustin', () => {
+  const projeto = projetarControlador({
+    nG: [5, 15], dG: [1, 4, 0], nH: [1], dH: [1, 1],
+    controlador: 'pid',
+    especificacao: { modo: 'desempenho', sobressinal: 10, acomodacao: 3, criterio: 5 },
+    discretizacao: { metodo: 'tustin', periodo: 2, alvo: 'controlador' },
+  });
+  assert.equal(projeto.viavel, true);
+  polosDesejadosEmMalhaFechada(projeto);
+  perto(projeto.zero.valor, 1.3322, 1e-4);
+  perto(projeto.modulo.kc, 0.5390, 1e-4);
+  const { numeradorZ, denominadorZ } = projeto.discretizacao;
+  assert.deepEqual(denominadorZ.map((v) => Number(v.toFixed(9))), [1, 0, -1]);
+  perto(numeradorZ[0], 2.9319, 1e-4);
+});
+
+teste('2o exercicio, questao 2: a/(s+b) e Euler', () => {
+  const projeto = projetarControlador({
+    nG: [2, 2], dG: [1, 2, 2], nH: [1, 3], dH: [1, 5],
+    controlador: 'polo',
+    especificacao: { modo: 'polos', real: -2.5, imaginario: 2 },
+    discretizacao: { metodo: 'euler', periodo: 1, alvo: 'malha' },
+  });
+  assert.equal(projeto.viavel, true);
+  polosDesejadosEmMalhaFechada(projeto);
+  perto(projeto.zero.valor, 2.80608, 1e-5);
+  perto(projeto.modulo.kc, 3.79990, 1e-5);
+  assert.deepEqual(projeto.ganhos, { a: projeto.modulo.kc, b: projeto.zero.valor });
+  assert.equal(projeto.discretizacao.estavel, false);
+  const modulos = projeto.discretizacao.polos.map((item) => item.modulo).sort((a, b) => a - b);
+  perto(modulos[3], 4, 1e-9);
+});
+
+teste('a/(s+b) recusa quando falta fase', () => {
+  const malhaAberta = montarMalhaAberta([1], [1, 2, 0], [1], [1]);
+  const angulo = criterioDeAngulo({ re: -2, im: 2 }, malhaAberta, obterControlador('polo'));
+  assert.equal(angulo.viavel, false);
+  assert.equal(angulo.motivo, 'excesso');
 });
 
 console.log(`\n${executados - falhas}/${executados} testes passaram`);

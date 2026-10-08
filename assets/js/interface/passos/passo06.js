@@ -5,6 +5,10 @@ import { fixoLatex, numeroLatex } from '../../formatacao/numero.js';
 export const titulo = '**Passo 6:** Critério de módulo e $K_c$';
 export const requerViabilidade = true;
 
+export function tituloPara(projeto) {
+  return `**Passo 6:** Critério de módulo e $${projeto.controlador.simboloGanho}$`;
+}
+
 function listarDistancias(destino, itens, polo) {
   for (const item of itens) {
     formula(
@@ -19,16 +23,22 @@ function produtoLatex(itens) {
 }
 
 export function renderizar(destino, projeto) {
-  const { modulo, desempenho } = projeto;
+  const { modulo, desempenho, controlador } = projeto;
+  const ganho = controlador.simboloGanho;
   const polo = desempenho.polo;
   const polos = rotularContribuicoes(modulo.distanciasPolos, 'p');
   const zeros = rotularContribuicoes(modulo.distanciasZeros, 'z');
 
   paragrafo(destino, '**Condição de módulo em $s_d$:**');
-  formula(destino, '|K_c\\,P(s_d)| = 1 \\;\\Longrightarrow\\; K_c = \\frac{\\prod |s_d - p_i|}{|k|\\,\\prod |s_d - z_j|}');
+  formula(
+    destino,
+    `|${ganho}\\,P(s_d)| = 1 \\;\\Longrightarrow\\; ${ganho} = \\frac{\\prod |s_d - p_i|}{|k|\\,\\prod |s_d - z_j|}`,
+  );
   paragrafo(
     destino,
-    'Agora o zero do controlador ($z_c$) entra no produto, junto com os polos e zeros da planta.',
+    controlador.polosLivres > 0
+      ? 'Agora o polo do controlador ($p_c$) entra no produto, junto com os polos e zeros da planta.'
+      : 'Agora o zero do controlador ($z_c$) entra no produto, junto com os polos e zeros da planta.',
   );
 
   separador(destino);
@@ -36,15 +46,19 @@ export function renderizar(destino, projeto) {
   listarDistancias(destino, polos, polo);
   formula(destino, `\\prod |s_d - p_i| = ${produtoLatex(polos)} = ${fixoLatex(modulo.produtoPolos, 4)}`);
 
-  paragrafo(destino, '**Distâncias aos zeros:**');
-  listarDistancias(destino, zeros, polo);
-  formula(destino, `\\prod |s_d - z_j| = ${produtoLatex(zeros)} = ${fixoLatex(modulo.produtoZeros, 4)}`);
+  if (zeros.length > 0) {
+    paragrafo(destino, '**Distâncias aos zeros:**');
+    listarDistancias(destino, zeros, polo);
+    formula(destino, `\\prod |s_d - z_j| = ${produtoLatex(zeros)} = ${fixoLatex(modulo.produtoZeros, 4)}`);
+  } else {
+    paragrafo(destino, 'Sem zeros finitos: $\\prod |s_d - z_j| = 1$.');
+  }
 
   separador(destino);
   paragrafo(destino, '**Resultado:**');
   formula(
     destino,
-    `K_c = \\frac{${fixoLatex(modulo.produtoPolos, 4)}}{${numeroLatex(modulo.ganhoDaPlanta)} \\cdot ${fixoLatex(modulo.produtoZeros, 4)}} = ${numeroLatex(modulo.kc)}`,
+    `${ganho} = \\frac{${fixoLatex(modulo.produtoPolos, 4)}}{${numeroLatex(modulo.ganhoDaPlanta)} \\cdot ${fixoLatex(modulo.produtoZeros, 4)}} = ${numeroLatex(modulo.kc)}`,
   );
-  aviso(destino, 'sucesso', `$K_c = ${numeroLatex(modulo.kc)}$`);
+  aviso(destino, 'sucesso', `$${ganho} = ${numeroLatex(modulo.kc)}$`);
 }

@@ -29,6 +29,11 @@
     </div>
   </header>
 
+  <div class="cabecalho-impressao">
+    <strong>DCA-3701 · Projeto de PD, PI e PID pelo lugar das raízes</strong>
+    <span>Lucas Augusto Spinola Pinto</span>
+  </div>
+
   <section class="capa">
     <div class="capa-interna">
       <div class="capa-texto">
@@ -114,9 +119,33 @@
               <option value="pd" selected>PD</option>
               <option value="pi">PI</option>
               <option value="pid">PID com zeros reais e iguais</option>
+              <option value="polo">a/(s + b), polo e ganho livres</option>
             </select>
           </label>
           <div class="previa" id="previa-controlador"></div>
+
+          <label class="campo">
+            <span>Discretização</span>
+            <select id="discretizacao">
+              <option value="nenhuma" selected>Não discretizar</option>
+              <option value="tustin">Tustin (bilinear)</option>
+              <option value="euler">Euler (diferença para frente)</option>
+              <option value="euler-atraso">Euler (diferença para trás)</option>
+            </select>
+          </label>
+          <div class="campos-duplos" data-discretizacao hidden>
+            <label class="campo">
+              <span>Período T (s)</span>
+              <input id="periodo" type="text" inputmode="decimal" value="1" autocomplete="off">
+            </label>
+            <label class="campo">
+              <span>Discretizar</span>
+              <select id="alvo">
+                <option value="controlador" selected>Controlador Gc(s)</option>
+                <option value="malha">Malha aberta Gc(s)G(s)H(s)</option>
+              </select>
+            </label>
+          </div>
         </fieldset>
 
         <fieldset class="grupo">
@@ -181,6 +210,7 @@
     </section>
 
     <div id="resultado" class="resultado"></div>
+    <div id="impressao" class="resultado impressao"></div>
   </main>
 </body>
 </html>

@@ -1,6 +1,6 @@
 import { interpretarCoeficientes } from '../nucleo/entrada.js';
 import { razaoLatex } from '../formatacao/latex.js';
-import { formaParalelaLatex, formaFatoradaLatex } from '../formatacao/controlador.js';
+import { controladorLatex } from '../formatacao/controlador.js';
 import { esbocarProjeto } from '../projeto/projeto.js';
 import { obterControlador } from '../projeto/controladores.js';
 import { pontosNotaveis } from '../projeto/pontosNotaveis.js';
@@ -13,12 +13,21 @@ import {
   desenharPoloDoControlador,
 } from '../grafico/camadas.js';
 import { elemento, escrever, formula, limparNo } from './componentes.js';
-import { CAMPOS, campo, atualizarModo, lerCoeficientes, lerEspecificacao } from './formulario.js';
+import {
+  CAMPOS,
+  VALORES_PADRAO,
+  campo,
+  atualizarModo,
+  lerCoeficientes,
+  lerEspecificacao,
+} from './formulario.js';
 import { EXERCICIOS } from './exercicios.js';
 import { passos } from './passos/indice.js';
+import { imprimirLista } from './relatorio.js';
 
 const ESPERA_DA_MINIATURA = 320;
 let agendamentoDaMiniatura = null;
+let questaoAtual = null;
 
 const PREVIAS = [
   { numerador: 'nG', denominador: 'dG', destino: 'previa-g', nome: 'G(s)' },
@@ -43,8 +52,7 @@ function atualizarPrevia(configuracao) {
 
 function atualizarPreviaDoControlador() {
   const destino = limparNo(document.getElementById('previa-controlador'));
-  const controlador = obterControlador(campo('controlador').value);
-  formula(destino, `G_c(s) = ${formaParalelaLatex(controlador)} = ${formaFatoradaLatex(controlador)}`);
+  formula(destino, controladorLatex(obterControlador(campo('controlador').value)));
 }
 
 function desenharMiniatura() {
@@ -85,9 +93,14 @@ function agendarMiniatura() {
 }
 
 function limparSelecaoDeExemplo() {
+  questaoAtual = null;
   document.querySelectorAll('.pilula-ativa').forEach((item) => {
     item.classList.remove('pilula-ativa');
   });
+}
+
+export function questaoSelecionada() {
+  return questaoAtual;
 }
 
 function atualizarTudo() {
@@ -107,7 +120,7 @@ function conectarCampos() {
 }
 
 function aplicarQuestao(questao) {
-  for (const [nome, valor] of Object.entries(questao)) {
+  for (const [nome, valor] of Object.entries({ ...VALORES_PADRAO, ...questao })) {
     if (nome in CAMPOS) {
       campo(nome).value = valor;
     }
@@ -121,6 +134,9 @@ function montarExemplos(destacarPrimeira) {
   EXERCICIOS.forEach((exercicio, posicao) => {
     const grupo = elemento('div', 'exemplos-grupo');
     grupo.appendChild(elemento('span', 'exemplos-rotulo', exercicio.nome));
+    if (destacarPrimeira && posicao === 0) {
+      questaoAtual = { ...exercicio.questoes[0], exercicio: exercicio.nome };
+    }
     exercicio.questoes.forEach((questao, indice) => {
       const botao = elemento('button', 'pilula', questao.nome);
       botao.type = 'button';
@@ -131,9 +147,16 @@ function montarExemplos(destacarPrimeira) {
         limparSelecaoDeExemplo();
         botao.classList.add('pilula-ativa');
         aplicarQuestao(questao);
+        questaoAtual = { ...questao, exercicio: exercicio.nome };
       });
       grupo.appendChild(botao);
     });
+
+    const pdf = elemento('button', 'pilula pilula-pdf', 'PDF da lista');
+    pdf.type = 'button';
+    pdf.title = `Resolve todas as questões do ${exercicio.nome} e abre a impressão para salvar em PDF.`;
+    pdf.addEventListener('click', () => imprimirLista(exercicio));
+    grupo.appendChild(pdf);
     lista.appendChild(grupo);
   });
 }

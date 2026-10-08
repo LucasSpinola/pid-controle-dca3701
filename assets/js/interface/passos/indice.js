@@ -7,6 +7,7 @@ import * as passo06 from './passo06.js';
 import * as passo07 from './passo07.js';
 import * as passo08 from './passo08.js';
 import * as passo09 from './passo09.js';
+import * as passo10 from './passo10.js';
 
 export const passos = [
   passo01,
@@ -18,4 +19,5 @@ export const passos = [
   passo07,
   passo08,
   passo09,
+  passo10,
 ];

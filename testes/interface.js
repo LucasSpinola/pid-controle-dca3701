@@ -102,7 +102,8 @@ const { projetarControlador } = await import('../assets/js/projeto/projeto.js');
 const { renderizarResultado } = await import('../assets/js/interface/resultado.js');
 const { passos } = await import('../assets/js/interface/passos/indice.js');
 const { EXERCICIOS } = await import('../assets/js/interface/exercicios.js');
-const { CAMPOS } = await import('../assets/js/interface/formulario.js');
+const { CAMPOS, interpretarFormulario } = await import('../assets/js/interface/formulario.js');
+const { montarQuestao } = await import('../assets/js/interface/relatorio.js');
 
 let executados = 0;
 let falhas = 0;
@@ -160,7 +161,38 @@ const CASOS = [
       especificacao: { modo: 'polos', real: -2, imaginario: 2 },
     },
   },
+  {
+    nome: '2o exercicio, questao 1 (PID e Tustin no controlador)',
+    entrada: {
+      nG: [5, 15], dG: [1, 4, 0], nH: [1], dH: [1, 1],
+      controlador: 'pid',
+      especificacao: { modo: 'desempenho', sobressinal: 10, acomodacao: 3, criterio: 5 },
+      discretizacao: { metodo: 'tustin', periodo: 2, alvo: 'controlador' },
+    },
+  },
+  {
+    nome: '2o exercicio, questao 2 (a/(s+b) e Euler na malha)',
+    entrada: {
+      nG: [2, 2], dG: [1, 2, 2], nH: [1, 3], dH: [1, 5],
+      controlador: 'polo',
+      especificacao: { modo: 'polos', real: -2.5, imaginario: 2 },
+      discretizacao: { metodo: 'euler', periodo: 1, alvo: 'malha' },
+    },
+  },
+  {
+    nome: 'PD com Euler para frente (nao causal)',
+    entrada: {
+      nG: [4, 16], dG: [1, 4, 4, 0], nH: [1], dH: [1],
+      controlador: 'pd',
+      especificacao: { modo: 'desempenho', sobressinal: 10, acomodacao: 4, criterio: 5 },
+      discretizacao: { metodo: 'euler', periodo: 0.1, alvo: 'controlador' },
+    },
+  },
 ];
+
+function passosAplicaveis(projeto) {
+  return passos.filter((passo) => !passo.aplicavel || passo.aplicavel(projeto)).length;
+}
 
 function renderizar(projeto) {
   const raiz = new NoFalso('div');
@@ -180,7 +212,7 @@ for (const caso of CASOS) {
     const raiz = renderizar(projeto);
     verificarSaida(raiz.serializar());
     if (projeto.viavel) {
-      assert.equal(raiz.children.filter((item) => item.tagName === 'details').length, passos.length);
+      assert.equal(raiz.children.filter((item) => item.tagName === 'details').length, passosAplicaveis(projeto));
     }
   });
 }
@@ -204,7 +236,7 @@ teste('as questoes da lista so usam campos do formulario', () => {
   for (const exercicio of EXERCICIOS) {
     for (const questao of exercicio.questoes) {
       for (const nome of Object.keys(questao)) {
-        assert.ok(nome === 'nome' || nome in CAMPOS, `campo desconhecido: ${nome}`);
+        assert.ok(['nome', 'enunciado'].includes(nome) || nome in CAMPOS, `campo desconhecido: ${nome}`);
       }
     }
   }
@@ -216,13 +248,43 @@ teste('escolher uma questao preenche o formulario', () => {
   document.getElementById(CAMPOS.controlador).value = 'pd';
   montarApresentacao();
   const grupo = document.getElementById('exemplos').children[0];
-  const botoes = grupo.children.filter((item) => item.tagName === 'button');
+  const botoes = grupo.children.filter((item) => item.tagName === 'button' && !item.className.includes('pilula-pdf'));
   assert.equal(botoes.length, EXERCICIOS[0].questoes.length);
 
   botoes[3].ouvintes.click();
   assert.equal(document.getElementById(CAMPOS.dG).value, '1 12 22 20');
   assert.equal(document.getElementById(CAMPOS.controlador).value, 'pid');
   assert.equal(document.getElementById(CAMPOS.criterio).value, '2');
+});
+
+teste('o controlador a/(s+b) aparece com polo nos passos', () => {
+  const projeto = projetarControlador(CASOS.find((caso) => caso.entrada.controlador === 'polo').entrada);
+  const html = renderizar(projeto).serializar();
+  assert.ok(html.includes('Localização do polo do controlador'));
+  assert.ok(html.includes('Passo 10'));
+  assert.ok(html.includes('fora do círculo unitário'));
+});
+
+teste('todas as questoes das listas viram entrada valida e renderizam', () => {
+  for (const exercicio of EXERCICIOS) {
+    for (const questao of exercicio.questoes) {
+      const leitura = interpretarFormulario(questao);
+      assert.ok(!leitura.erro, `${exercicio.nome}, ${questao.nome}: ${leitura.erro}`);
+      const raiz = new NoFalso('div');
+      montarQuestao(raiz, exercicio, questao);
+      const html = raiz.serializar();
+      verificarSaida(html);
+      assert.ok(html.includes(questao.nome));
+      assert.ok(!html.includes('aviso-erro'), `${exercicio.nome}, ${questao.nome} terminou com erro`);
+    }
+  }
+});
+
+teste('cada lista tem botao de PDF', () => {
+  const grupos = document.getElementById('exemplos').children;
+  for (const grupo of grupos) {
+    assert.equal(grupo.children.filter((item) => item.className.includes('pilula-pdf')).length, 1);
+  }
 });
 
 console.log(`\n${executados - falhas}/${executados} testes de interface passaram`);

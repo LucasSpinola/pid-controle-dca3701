@@ -65,7 +65,22 @@ export function montarBotaoDeDownload(destino, svg, nome) {
   return botao;
 }
 
-export function montarBarraDeResultado(destino) {
+export function imprimir(titulo, aoTerminar = null) {
+  const anterior = document.title;
+  document.title = titulo;
+
+  const restaurar = () => {
+    window.removeEventListener('afterprint', restaurar);
+    document.title = anterior;
+    if (aoTerminar) {
+      aoTerminar();
+    }
+  };
+  window.addEventListener('afterprint', restaurar);
+  window.print();
+}
+
+export function montarBarraDeResultado(destino, tituloDoArquivo) {
   const barra = elemento('div', 'barra-resultado');
   const botao = elemento('button', 'botao-secundario', 'Expandir todos os passos');
   botao.type = 'button';
@@ -79,7 +94,13 @@ export function montarBarraDeResultado(destino) {
     botao.textContent = expandido ? 'Recolher todos os passos' : 'Expandir todos os passos';
   });
 
+  const pdf = elemento('button', 'botao-secundario botao-pdf', 'Baixar PDF');
+  pdf.type = 'button';
+  pdf.title = 'Abre a impressão; escolha "Salvar como PDF" no destino.';
+  pdf.addEventListener('click', () => imprimir(tituloDoArquivo));
+
   barra.appendChild(botao);
+  barra.appendChild(pdf);
   destino.appendChild(barra);
   return barra;
 }
